@@ -8,7 +8,7 @@ from google.protobuf.json_format import MessageToDict
 load_dotenv()
 
 # === CONFIGURATION ===
-service_account_file = os.getenv('GOOGLE_APPLICATION_CREDENTIALS')
+service_account_file = os.getenv('GOOGLE_APPLICATION_PATH')
 processor_url = os.getenv('DOCUMENT_AI_PROCESSOR_URL')
 file_path = r"C:\Users\JonathanChackoPattas\OneDrive - Maritime Support Solutions\Desktop\Class Notes\Seneca\Semester 2\AIG200 - Capstone Project\Code\ignore\large-receipt-image-dataset-SRD\1000-receipt.jpg"
 mime_type = "image/jpeg"
