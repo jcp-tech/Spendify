@@ -1,4 +1,5 @@
 **/.env
+**/serviceAccountKey.json
 **/*ignore*/
 # **/*.keras
 **/*__pycache__*/
