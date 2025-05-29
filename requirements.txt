@@ -1,0 +1,6 @@
+discord.py
+python-dotenv
+requests
+flask
+google-cloud-documentai
+firebase-admin

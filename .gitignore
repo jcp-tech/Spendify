@@ -3,3 +3,7 @@
 **/*ignore*/
 # **/*.keras
 **/*__pycache__*/
+**/img_content
+**/uploads
+**/gcp_service_account.json
+**/firebase_credentials.json
