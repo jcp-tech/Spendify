@@ -165,6 +165,7 @@ def upload():
             summary = classify_run(
                 line_items,
                 receipt_total_value=receipt_total_value,
+                raw_data=grouped,
                 image_b64=image_b64,
                 optimize=optimize,
             )

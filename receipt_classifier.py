@@ -1,12 +1,12 @@
 # from langchain_core.runnables import RunnableSequence # from langchain.chains import LLMChain
 from langchain_ollama import ChatOllama # from langchain_community.chat_models import ChatOllama
 from langchain.prompts import PromptTemplate
-import json, re, math, time
-from concurrent.futures import ThreadPoolExecutor
+import json, re, time # , math
 
 TEXT_PROMPT_TEMPLATE = """
 Given the following receipt items and possible total values, classify each item into one of:
 ["Groceries", "Fast Food", "Electronics", "Apparel", "Personal Care", "Others"]
+Keep in mind that sometimes the data will be Provided like `2 Socks 3` which means 2 units, $3 total (This is an example).
 For each category:
 - List the items that belong to it (as strings).
 - Compute the sum total of prices for that category.
@@ -24,12 +24,16 @@ Receipt Items:
 {items}
 Receipt Totals (candidates):
 {totals}
+
+RAW DATA (for context, not for extraction):
+{raw_data}
 """
 
 VISION_PROMPT_TEMPLATE = """
 This is an image of a restaurant receipt. 
 Extract all line items (each item and its price), classify each item into:
 ["Groceries", "Fast Food", "Electronics", "Apparel", "Personal Care", "Others"].
+Keep in mind that sometimes the data will be Provided like `2 Socks 3` which means 2 units, $3 total (This is an example).
 For each category, list all items and compute the total price.
 Return ONLY a JSON object in the following format (KEEP IN MIND THIS IS A SAMPLE, DO NOT USE IT AS IS FOR YOUR OUTPUT - IMPORTANT!):
 {{
@@ -45,11 +49,14 @@ Receipt Items:
 {items}
 Receipt Totals (candidates):
 {totals}
+
+RAW DATA (for context, not for extraction):
+{raw_data}
 """
 
 
-text_prompt = PromptTemplate(input_variables=["items", "totals"], template=TEXT_PROMPT_TEMPLATE)
-vision_prompt = PromptTemplate(input_variables=["items", "totals"], template=VISION_PROMPT_TEMPLATE)
+text_prompt = PromptTemplate(input_variables=["items", "totals", "raw_data"], template=TEXT_PROMPT_TEMPLATE)
+vision_prompt = PromptTemplate(input_variables=["items", "totals", "raw_data"], template=VISION_PROMPT_TEMPLATE)
 
 '''
 📊 Final Model Benchmark Summary (with Accuracy)
@@ -82,26 +89,32 @@ def init_classifier(primary: str = "llama3", fallback: str = "mistral", vision: 
 
 # Extract clean JSON
 def extract_json(text):
+    # Remove JS-style comments (// ... and /* ... */)
+    cleaned = re.sub(r'//.*', '', text)
+    cleaned = re.sub(r'/\*[\s\S]*?\*/', '', cleaned)
+    # Remove trailing commas (which are also invalid)
+    cleaned = re.sub(r',(\s*[\]}])', r'\1', cleaned)
     try:
-        text = text.strip().replace("```json", "").replace("```", "")
-        obj_match = re.search(r"{[\s\S]+}", text)
+        # Try to find the JSON object/array after cleaning
+        obj_match = re.search(r"{[\s\S]+}", cleaned)
         if obj_match:
             return json.loads(obj_match.group())
-        arr_match = re.search(r"\[[\s\S]+\]", text)
+        arr_match = re.search(r"\[[\s\S]+\]", cleaned)
         if arr_match:
             return {"categories": json.loads(arr_match.group())}
-        return {"error": "No valid JSON found", "raw_response": text}
+        return {"error": "No valid JSON found in response", "raw_response": text}
     except Exception as e:
         print("❌ JSON parse error:", e)
         print("❌ Raw response:", text)
-        return {"error": "JSON parse error", "raw_response": text}
+        return {"error": "JSON parsing failed", "raw_response": text}
 
-def run(line_items, receipt_total_value, image_b64=None, optimize=True):
+def run(line_items, receipt_total_value, raw_data=None, image_b64=None, optimize=True):
     start_time = time.time()
     items_text = "\n".join(line_items)
     prompt_vars = {
         "items": items_text,
-        "totals": json.dumps(receipt_total_value)
+        "totals": json.dumps(receipt_total_value),
+        "raw_data": json.dumps(raw_data) if raw_data else "",
     }
 
     # MULTI-MODAL/FALLBACK FLOW
@@ -119,12 +132,15 @@ def run(line_items, receipt_total_value, image_b64=None, optimize=True):
             f"{items_text}\nTotals: {json.dumps(receipt_total_value)}\n"
             f"If the categories and totals are correct, return the same JSON. "
             f"If any are incorrect, return the corrected JSON."
+            f"Compare to the Raw Data provided:\n"
+            f"{json.dumps(raw_data) if raw_data else ''}\n"
         )
         main_result = main_chain.invoke({
             "items": items_text,
             "totals": json.dumps(receipt_total_value),
             "prompt": check_prompt,
-            "vision_json": json.dumps(vision_json)
+            "vision_json": json.dumps(vision_json),
+            "raw_data": json.dumps(raw_data) if raw_data else ""
         })
         main_json = extract_json(main_result.content)
         print("[Main LLM] JSON:", main_json)
@@ -144,13 +160,15 @@ def run(line_items, receipt_total_value, image_b64=None, optimize=True):
             f"OCR line items: {items_text}\n"
             f"Totals: {json.dumps(receipt_total_value)}\n"
             "Compare the outputs above and return the most accurate categorization and totals as a single JSON."
+            f"Raw Data: {json.dumps(raw_data) if raw_data else ''}\n"
         )
         fallback_result = fallback_chain.invoke({
             "items": items_text,
             "totals": json.dumps(receipt_total_value),
             "prompt": fallback_prompt,
             "vision_json": json.dumps(vision_json),
-            "main_json": json.dumps(main_json)
+            "main_json": json.dumps(main_json),
+            "raw_data": json.dumps(raw_data) if raw_data else ""
         })
         final = extract_json(fallback_result.content)
         print("[Fallback LLM] JSON:", final)
