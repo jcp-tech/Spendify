@@ -10,7 +10,7 @@ from dotenv import load_dotenv
 from gcp_docai import extract_receipt_data
 from firebase_store import (
     get_primary_id, create_user,
-    save_session_meta, save_raw_data, save_receipt_data
+    save_session_meta, save_raw_data, save_receipt_data, save_summarised_data
 )
 from receipt_classifier import init_classifier, run as classify_run
 
@@ -64,6 +64,10 @@ def upload():
     identifier = request.form.get('identifier')
     source = request.form.get('source')
     timestamp = request.form.get('timestamp')
+    # --- Parse these with type safety ---
+    optimize = request.form.get("optimize", "True")
+    optimize = optimize if isinstance(optimize, bool) else (optimize.lower() == "true")
+    num_workers = int(request.form.get("num_workers", 3))
     logging.info(f"Params: session_id={session_id}, identifier={identifier}, source={source}, timestamp={timestamp}")
     if not file or not session_id or not identifier or not source or not timestamp:
         logging.error("Missing parameters in upload request")
@@ -108,10 +112,48 @@ def upload():
     logging.info("Saving receipt data under DATA/RECEIPTS")
     save_receipt_data(date_str, session_id, grouped, timestamp)
 
+    # === CLASSIFICATION & SUMMARY SECTION ===
+    item_candidates = (
+        grouped.get("line_item")
+        # or grouped.get("item")
+        # or grouped.get("ITEM")
+        or []
+    )
+    if not item_candidates:
+        possible_item_keys = [k for k in grouped.keys() if "item" in k.lower()]
+        if possible_item_keys:
+            item_candidates = grouped[possible_item_keys[0]]
+
+    if item_candidates:
+        logging.info(f"Classifying {len(item_candidates)} items for session {session_id}")
+        try:
+            classified = classify_run(
+                item_candidates,
+                optimize=optimize,
+                num_workers=num_workers
+            )  # From receipt_classifier.py
+
+            # Optional: Aggregate totals per category
+            category_totals = {}
+            for entry in classified:
+                cat = entry.get("category", "Others")
+                category_totals[cat] = category_totals.get(cat, 0) + 1
+
+            summary_dict = {
+                "classified_items": classified,         # List of {item, category}
+                "category_counts": category_totals,     # Simple count per category
+            }
+            save_summarised_data(date_str, session_id, summary_dict, timestamp)
+            logging.info("Summarised (classified) data saved under DATA/SUMMARISED_DATA")
+        except Exception as e:
+            logging.exception(f"Classification failed for session {session_id}: {e}")
+    else:
+        logging.warning(f"No 'item' candidates found for classification for session {session_id}")
+
     logging.info(f"Completed processing for session {session_id}")
     return jsonify({'status': 'processing', 'session_id': session_id}), 200
 
-# ✅ NEW CLASSIFICATION ENDPOINT
+# CLASSIFICATION ENDPOINT
 @app.route("/classify", methods=["POST"])
 def classify():
     data = request.get_json()

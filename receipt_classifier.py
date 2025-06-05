@@ -62,7 +62,7 @@ def classify_batch(batch):
     try:
         print(f"⚡ main_chain ({main_model})...")
         result = main_chain.invoke({"items": items_text})
-        parsed = extract_json(result["text"])
+        parsed = extract_json(result.content) # extract_json(result["text"])
         if parsed: return parsed
     except Exception as e:
         print("⚠️ main_chain failed:", e)
@@ -70,7 +70,7 @@ def classify_batch(batch):
     try:
         print(f"🔁 fallback_chain ({fallback_model})...")
         result = fallback_chain.invoke({"items": items_text})
-        return extract_json(result["text"]) or []
+        return extract_json(result.content) or [] # extract_json(result["text"]) or []
     except Exception as e:
         print("❌ fallback_chain failed too:", e)
         return []
