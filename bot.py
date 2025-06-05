@@ -103,7 +103,9 @@ async def process_upload(session_id, file_path, identifier, primary, source, tim
                 'session_id': session_id,
                 'identifier': identifier,
                 'source': source,
-                'timestamp': timestamp
+                'timestamp': timestamp,
+                'optimize': "True",         # Ensure string type for form field (default True)
+                # 'num_workers': "3",         # Default worker threads, can be changed dynamically
             }
             requests.post(f"{API_BASE}/upload", files=files, data=data, timeout=30)
     except Exception as e:

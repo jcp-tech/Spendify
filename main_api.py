@@ -1,6 +1,6 @@
 """
 PIP installs:
-pip install flask python-dotenv google-cloud-documentai firebase-
+pip install flask python-dotenv google-cloud-documentai firebase-admin
 pip install langchain langchain-ollama
 """
 
@@ -113,37 +113,39 @@ def upload():
     save_receipt_data(date_str, session_id, grouped, timestamp)
 
     # === CLASSIFICATION & SUMMARY SECTION ===
-    item_candidates = (
+    # 1. Extract line_items (flexible key search)
+    line_items = (
         grouped.get("line_item")
-        # or grouped.get("item")
-        # or grouped.get("ITEM")
+        or grouped.get("item")
+        or grouped.get("ITEM")
         or []
     )
-    if not item_candidates:
+    if not line_items:
         possible_item_keys = [k for k in grouped.keys() if "item" in k.lower()]
         if possible_item_keys:
-            item_candidates = grouped[possible_item_keys[0]]
+            line_items = grouped[possible_item_keys[0]]
 
-    if item_candidates:
-        logging.info(f"Classifying {len(item_candidates)} items for session {session_id}")
+    # 2. Extract receipt total (try a few key names, fallback to "0")
+    total_candidates = (
+        grouped.get("total") or
+        grouped.get("amount_due") or
+        grouped.get("AMOUNT") or
+        ["0"]
+    )
+    # If it's a list, take the first value
+    receipt_total_value = total_candidates[0] if isinstance(total_candidates, list) else total_candidates
+
+    if line_items:
+        logging.info(f"Classifying {len(line_items)} items for session {session_id} with total {receipt_total_value}")
         try:
-            classified = classify_run(
-                item_candidates,
+            # Run new classifier with both line_items and total!
+            summary = classify_run(
+                line_items,
+                total=receipt_total_value,
                 optimize=optimize,
                 num_workers=num_workers
-            )  # From receipt_classifier.py
-
-            # Optional: Aggregate totals per category
-            category_totals = {}
-            for entry in classified:
-                cat = entry.get("category", "Others")
-                category_totals[cat] = category_totals.get(cat, 0) + 1
-
-            summary_dict = {
-                "classified_items": classified,         # List of {item, category}
-                "category_counts": category_totals,     # Simple count per category
-            }
-            save_summarised_data(date_str, session_id, summary_dict, timestamp)
+            )
+            save_summarised_data(date_str, session_id, summary, timestamp)
             logging.info("Summarised (classified) data saved under DATA/SUMMARISED_DATA")
         except Exception as e:
             logging.exception(f"Classification failed for session {session_id}: {e}")
@@ -153,23 +155,23 @@ def upload():
     logging.info(f"Completed processing for session {session_id}")
     return jsonify({'status': 'processing', 'session_id': session_id}), 200
 
-# CLASSIFICATION ENDPOINT
-@app.route("/classify", methods=["POST"])
-def classify():
-    data = request.get_json()
-    items = data.get("items", [])
-    optimize = data.get("optimize", True)
-    num_workers = data.get("num_workers", 3)
+# # CLASSIFICATION ENDPOINT
+# @app.route("/classify", methods=["POST"]) # NOTE: This is for OLD_PROMT
+# def classify():
+#     data = request.get_json()
+#     items = data.get("items", [])
+#     optimize = data.get("optimize", True)
+#     num_workers = data.get("num_workers", 3)
 
-    if not items or not isinstance(items, list):
-        return jsonify({"error": "Invalid or missing 'items' list."}), 400
+#     if not items or not isinstance(items, list):
+#         return jsonify({"error": "Invalid or missing 'items' list."}), 400
 
-    results = classify_run(
-        items,
-        optimize=optimize,
-        num_workers=num_workers
-    )
-    return jsonify(results)
+#     results = classify_run(
+#         items,
+#         optimize=optimize,
+#         num_workers=num_workers
+#     )
+#     return jsonify(results)
 
 if __name__ == '__main__':
     logging.info(f"🌐 Starting API on port {API_PORT}")
