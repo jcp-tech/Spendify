@@ -4,3 +4,8 @@ requests
 flask
 google-cloud-documentai
 firebase-admin
+langchain
+langchain-community
+openai
+tiktoken
+google-cloud-vision

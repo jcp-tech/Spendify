@@ -1,0 +1,37 @@
+{
+    // Use IntelliSense to learn about possible attributes.
+    // Hover to view descriptions of existing attributes.
+    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Python Debugger: API",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${workspaceFolder}/main_api.py",
+            "console": "integratedTerminal",
+            "env": {
+                // Add any environment variables needed for the API here
+                // e.g., "API_PORT": "8000"
+            }
+        },
+        {
+            "name": "Python Debugger: Bot",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${workspaceFolder}/bot.py",
+            "console": "integratedTerminal",
+            "env": {
+                // Add any environment variables needed for the Bot here
+                // e.g., "DISCORD_TOKEN": "your_token_here"
+            }
+        }
+    ],
+    "compounds": [
+        {
+            "name": "API and Bot",
+            "configurations": ["Python Debugger: API", "Python Debugger: Bot"],
+            "stopAll": true
+        }
+    ]
+}
