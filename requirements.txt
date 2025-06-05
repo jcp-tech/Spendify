@@ -6,6 +6,7 @@ google-cloud-documentai
 firebase-admin
 langchain
 langchain-community
+langchain-ollama
 openai
 tiktoken
 google-cloud-vision
