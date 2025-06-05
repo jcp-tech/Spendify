@@ -68,7 +68,7 @@ def save_receipt_data(date_str, session_id, receipt_dict, timestamp):
     """
     logging.info(f"save_receipt_data: date={date_str}, session_id={session_id}")
     rec_ref = db.collection('DATA').document('RECEIPTS').collection(date_str).document(session_id)
-    payload = {'timestamp': timestamp, 'entities': receipt_dict}
+    payload = {'entities': receipt_dict} # 'timestamp': timestamp, 
     rec_ref.set(payload)
     logging.info("Receipt data saved under DATA/RECEIPTS")
 
@@ -79,6 +79,6 @@ def save_summarised_data(date_str, session_id, summary_dict, timestamp):
     """
     logging.info(f"save_summarised_data: date={date_str}, session_id={session_id}")
     sum_ref = db.collection('DATA').document('SUMMARISED_DATA').collection(date_str).document(session_id)
-    payload = {'timestamp': timestamp, **summary_dict}
+    payload = {**summary_dict} # 'timestamp': timestamp, 
     sum_ref.set(payload)
     logging.info("Summarised data saved under DATA/SUMMARISED_DATA")

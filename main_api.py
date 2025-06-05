@@ -4,7 +4,7 @@ pip install flask python-dotenv google-cloud-documentai firebase-admin
 pip install langchain langchain-ollama
 """
 
-import os, logging, sys, json
+import os, logging, sys, json, base64
 from flask import Flask, request, jsonify
 from dotenv import load_dotenv
 from gcp_docai import extract_receipt_data
@@ -13,6 +13,8 @@ from firebase_store import (
     save_session_meta, save_raw_data, save_receipt_data, save_summarised_data
 )
 from receipt_classifier import init_classifier, run as classify_run
+from io import BytesIO
+from PIL import Image
 
 # Load ENV
 load_dotenv()
@@ -21,13 +23,26 @@ API_PORT = int(os.getenv('API_PORT', 8000))
 # Set default models if not passed via CLI
 DEFAULT_MAIN_MODEL = os.getenv("MAIN_MODEL", "llama3")
 DEFAULT_FALLBACK_MODEL = os.getenv("FALLBACK_MODEL", "mistral")
+DEFAULT_VISION_MODEL = os.getenv("VISION_MODEL", "llava")
 
 # Setup logging
 logging.basicConfig(level=logging.INFO, format='[%(asctime)s] %(levelname)s: %(message)s')
 app = Flask(__name__)
 
 # 🔁 MODELS INIT
-init_classifier(primary=DEFAULT_MAIN_MODEL, fallback=DEFAULT_FALLBACK_MODEL)
+init_classifier(primary=DEFAULT_MAIN_MODEL, fallback=DEFAULT_FALLBACK_MODEL, vision=DEFAULT_VISION_MODEL)
+
+def image_to_base64(image_path):
+    with Image.open(image_path) as img:
+        buffered = BytesIO()
+        img.save(buffered, format="JPEG")
+        return base64.b64encode(buffered.getvalue()).decode("utf-8")
+
+def safe_sum(val1, val2):
+    try:
+        return [str(float(val1[0]) + float(val2[0]))]
+    except Exception:
+        return None
 
 @app.route('/register', methods=['POST'])
 def register():
@@ -67,7 +82,6 @@ def upload():
     # --- Parse these with type safety ---
     optimize = request.form.get("optimize", "True")
     optimize = optimize if isinstance(optimize, bool) else (optimize.lower() == "true")
-    num_workers = int(request.form.get("num_workers", 3))
     logging.info(f"Params: session_id={session_id}, identifier={identifier}, source={source}, timestamp={timestamp}")
     if not file or not session_id or not identifier or not source or not timestamp:
         logging.error("Missing parameters in upload request")
@@ -113,6 +127,9 @@ def upload():
     save_receipt_data(date_str, session_id, grouped, timestamp)
 
     # === CLASSIFICATION & SUMMARY SECTION ===
+    logging.info("Converting image to base64 for classification")
+    image_b64 = image_to_base64(save_path)
+
     # 1. Extract line_items (flexible key search)
     line_items = (
         grouped.get("line_item")
@@ -126,27 +143,36 @@ def upload():
             line_items = grouped[possible_item_keys[0]]
 
     # 2. Extract receipt total (try a few key names, fallback to "0")
-    total_candidates = (
-        grouped.get("total") or
-        grouped.get("amount_due") or
-        grouped.get("AMOUNT") or
+    
+    net_amount = grouped.get("net_amount", ["0"])
+    total_tax_amount = grouped.get("total_tax_amount", ["0"])
+    total_amount = (
+        grouped.get("total_amount") or
+        safe_sum(net_amount, total_tax_amount) or
+        # grouped.get("net_amount")
         ["0"]
     )
+
+    total_candidates = {"total_amount": total_amount, "net_amount": net_amount, "total_tax_amount": total_tax_amount}
+
     # If it's a list, take the first value
-    receipt_total_value = total_candidates[0] if isinstance(total_candidates, list) else total_candidates
+    receipt_total_value = {k: (v[0] if isinstance(v, list) else v) for k, v in total_candidates.items()}
 
     if line_items:
-        logging.info(f"Classifying {len(line_items)} items for session {session_id} with total {receipt_total_value}")
+        logging.info(f"Classifying {len(line_items)} items for session {session_id} with totals {receipt_total_value}")
         try:
             # Run new classifier with both line_items and total!
             summary = classify_run(
                 line_items,
-                total=receipt_total_value,
+                receipt_total_value=receipt_total_value,
+                image_b64=image_b64,
                 optimize=optimize,
-                num_workers=num_workers
             )
-            save_summarised_data(date_str, session_id, summary, timestamp)
-            logging.info("Summarised (classified) data saved under DATA/SUMMARISED_DATA")
+            if summary is None or (isinstance(summary, dict) and summary.get("error")):
+                logging.error(f"Classification failed for session {session_id}. Not saving summary.")
+            else:
+                save_summarised_data(date_str, session_id, summary, timestamp)
+                logging.info("Summarised (classified) data saved under DATA/SUMMARISED_DATA")
         except Exception as e:
             logging.exception(f"Classification failed for session {session_id}: {e}")
     else:
@@ -154,24 +180,6 @@ def upload():
 
     logging.info(f"Completed processing for session {session_id}")
     return jsonify({'status': 'processing', 'session_id': session_id}), 200
-
-# # CLASSIFICATION ENDPOINT
-# @app.route("/classify", methods=["POST"]) # NOTE: This is for OLD_PROMT
-# def classify():
-#     data = request.get_json()
-#     items = data.get("items", [])
-#     optimize = data.get("optimize", True)
-#     num_workers = data.get("num_workers", 3)
-
-#     if not items or not isinstance(items, list):
-#         return jsonify({"error": "Invalid or missing 'items' list."}), 400
-
-#     results = classify_run(
-#         items,
-#         optimize=optimize,
-#         num_workers=num_workers
-#     )
-#     return jsonify(results)
 
 if __name__ == '__main__':
     logging.info(f"🌐 Starting API on port {API_PORT}")
