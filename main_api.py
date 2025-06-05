@@ -1,10 +1,10 @@
 """
 PIP installs:
-pip install flask python-dotenv google-cloud-documentai firebase-admin
+pip install flask python-dotenv google-cloud-documentai firebase-
+pip install langchain langchain-ollama
 """
 
-import os
-import logging
+import os, logging, sys, json
 from flask import Flask, request, jsonify
 from dotenv import load_dotenv
 from gcp_docai import extract_receipt_data
@@ -12,14 +12,22 @@ from firebase_store import (
     get_primary_id, create_user,
     save_session_meta, save_raw_data, save_receipt_data
 )
+from receipt_classifier import init_classifier, run as classify_run
+
+# Load ENV
+load_dotenv()
+API_PORT = int(os.getenv('API_PORT', 8000))
+
+# Set default models if not passed via CLI
+DEFAULT_MAIN_MODEL = os.getenv("MAIN_MODEL", "llama3")
+DEFAULT_FALLBACK_MODEL = os.getenv("FALLBACK_MODEL", "mistral")
 
 # Setup logging
 logging.basicConfig(level=logging.INFO, format='[%(asctime)s] %(levelname)s: %(message)s')
-
-load_dotenv()
-
-API_PORT = int(os.getenv('API_PORT', 8000))
 app = Flask(__name__)
+
+# 🔁 MODELS INIT
+init_classifier(primary=DEFAULT_MAIN_MODEL, fallback=DEFAULT_FALLBACK_MODEL)
 
 @app.route('/register', methods=['POST'])
 def register():
@@ -103,6 +111,24 @@ def upload():
     logging.info(f"Completed processing for session {session_id}")
     return jsonify({'status': 'processing', 'session_id': session_id}), 200
 
+# ✅ NEW CLASSIFICATION ENDPOINT
+@app.route("/classify", methods=["POST"])
+def classify():
+    data = request.get_json()
+    items = data.get("items", [])
+    optimize = data.get("optimize", True)
+    num_workers = data.get("num_workers", 3)
+
+    if not items or not isinstance(items, list):
+        return jsonify({"error": "Invalid or missing 'items' list."}), 400
+
+    results = classify_run(
+        items,
+        optimize=optimize,
+        num_workers=num_workers
+    )
+    return jsonify(results)
+
 if __name__ == '__main__':
-    logging.info(f"Starting API on port {API_PORT}")
+    logging.info(f"🌐 Starting API on port {API_PORT}")
     app.run(host='0.0.0.0', port=API_PORT)
