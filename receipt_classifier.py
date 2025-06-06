@@ -244,16 +244,42 @@ def run(line_items, receipt_total_value, raw_data=None, image_b64=None, optimize
         graph.set_entry_point("standardizer")
         graph.add_edge("standardizer", "vision")
         graph.add_edge("vision", "validator")
+        graph.add_edge("main", "validator")      # If we reach main, its output goes to validator
+        graph.add_edge("fallback", "validator")  # If we reach fallback, its output goes to validator
 
-        def route_after_validation(state: ReceiptState):
-            return "main" if not state.get("valid", False) and state["stage"] == "vision" else END
-        def route_after_main_validation(state: ReceiptState):
-            return "fallback" if not state.get("valid", False) and state["stage"] == "main" else END
+        # Centralized routing logic after any validation step
+        def route_after_any_validation(state: ReceiptState):
+            stage = state.get("stage")
+            is_valid = state.get("valid", False)
 
-        graph.add_conditional_edges("validator", route_after_validation)
-        graph.add_edge("main", "validator")
-        graph.add_conditional_edges("main", route_after_main_validation)
-        graph.add_edge("fallback", "validator")
+            if stage == "vision":
+                print(f"Routing after vision validation. Valid: {is_valid}, Confidence: {state.get('confidence_score')}")
+                return "main" if not is_valid else END
+            elif stage == "main":
+                print(f"Routing after main validation. Valid: {is_valid}, Confidence: {state.get('confidence_score')}")
+                return "fallback" if not is_valid else END
+            elif stage == "fallback":
+                print(f"Routing after fallback validation. Valid: {is_valid}, Confidence: {state.get('confidence_score')}")
+                # Always END after fallback, regardless of validity.
+                # Consider raising an error or returning a specific "failed" status if still not valid.
+                return END
+            else:
+                # This case should ideally not be reached if stages are set correctly
+                print(f"Warning: Unknown stage '{stage}' in route_after_any_validation. Ending.")
+                return END
+
+        graph.add_conditional_edges(
+            "validator", # Source node for conditional routing is always "validator"
+            route_after_any_validation
+        )
+        # The following lines are removed or replaced by the logic above:
+        # def route_after_validation(state: ReceiptState):
+        #     return "main" if not state.get("valid", False) and state["stage"] == "vision" else END
+        # def route_after_main_validation(state: ReceiptState):
+        #     return "fallback" if not state.get("valid", False) and state["stage"] == "main" else END
+        # graph.add_conditional_edges("validator", route_after_validation)
+        # graph.add_conditional_edges("main", route_after_main_validation)
+
 
         receipt_graph = graph.compile()
 
