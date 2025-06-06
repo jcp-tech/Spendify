@@ -1,7 +1,7 @@
 """
 PIP installs:
 pip install flask python-dotenv google-cloud-documentai firebase-admin
-pip install langchain langchain-ollama
+pip install langchain langchain-ollama langgraph
 """
 
 import os, logging, sys, json, base64

@@ -16,6 +16,7 @@ load_dotenv()
 
 DISCORD_TOKEN = os.getenv('DISCORD_TOKEN')
 API_BASE = os.getenv('API_URL', 'http://127.0.0.1:8000')
+OPTIMISE = os.getenv('OPTIMISE', 'True')
 
 intents = discord.Intents.default()
 intents.message_content = True
@@ -104,7 +105,7 @@ async def process_upload(session_id, file_path, identifier, primary, source, tim
                 'identifier': identifier,
                 'source': source,
                 'timestamp': timestamp,
-                'optimize': "False",         # Ensure string type for form field (default True)
+                'optimize': OPTIMISE,         # Ensure string type for form field (default True)
             }
             requests.post(f"{API_BASE}/upload", files=files, data=data, timeout=30)
     except Exception as e:
