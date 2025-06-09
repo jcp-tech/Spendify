@@ -35,6 +35,8 @@ init_classifier(primary=DEFAULT_MAIN_MODEL, fallback=DEFAULT_FALLBACK_MODEL, vis
 def image_to_base64(image_path):
     with Image.open(image_path) as img:
         buffered = BytesIO()
+        if img.mode == 'RGBA':
+            img = img.convert('RGB')
         img.save(buffered, format="JPEG")
         return base64.b64encode(buffered.getvalue()).decode("utf-8")
 
@@ -109,6 +111,22 @@ def upload():
         logging.info("Calling GCP Document AI")
         document_dict, document_proto = extract_receipt_data(save_path)
         logging.info(f"GCP returned document with {len(document_proto.entities)} entities")
+
+        # Sanitize document_dict to ensure Firestore compatibility
+        try:
+            # Convert non-serializable parts to strings or standard Python dicts/lists.
+            # default=str helps convert types like datetime objects to strings if they are not already.
+            json_string = json.dumps(document_dict, default=str)
+            sanitized_document_dict = json.loads(json_string)
+        except Exception as e:
+            logging.error(f"Error sanitizing document_dict for Firestore using json.dumps/loads: {e}. Original type: {type(document_dict)}. Falling back to a basic error structure.")
+            # Fallback to a simple error structure to avoid passing potentially complex/problematic original dict
+            sanitized_document_dict = {
+                "error_message": "Failed to sanitize document_dict for Firestore.",
+                "original_type": str(type(document_dict)),
+                "exception_details": str(e)
+            }
+
     except Exception as e:
         logging.exception("GCP processing failed")
         return jsonify({'error': 'GCP failed', 'details': str(e)}), 500
@@ -122,7 +140,7 @@ def upload():
     # Store raw & receipts under DATA collection
     date_str = timestamp.split('T')[0]
     logging.info("Saving raw data under DATA/RAW_DATA")
-    save_raw_data(date_str, session_id, document_dict, timestamp)
+    save_raw_data(date_str, session_id, sanitized_document_dict, timestamp) # Use sanitized_document_dict
     logging.info("Saving receipt data under DATA/RECEIPTS")
     save_receipt_data(date_str, session_id, grouped, timestamp)
 

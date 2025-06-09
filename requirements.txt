@@ -7,6 +7,8 @@ firebase-admin
 langchain
 langchain-community
 langchain-ollama
+langgraph
 openai
 tiktoken
 google-cloud-vision
+Pillow
