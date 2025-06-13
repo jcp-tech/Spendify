@@ -205,3 +205,9 @@ Spendify/
 ```
 
 This README provides a comprehensive guide to understanding, setting up, and running the SPENDIFY project.
+
+## Project Flow Diagram
+
+Below is a high-level diagram illustrating the flow of data and interactions in the SPENDIFY system:
+
+![SPENDIFY Process Flow](process.png)
