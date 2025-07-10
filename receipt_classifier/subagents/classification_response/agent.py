@@ -1,3 +1,8 @@
+"""
+Receipt Classification Response Agent
+"""
+
+# response_agent/agent.py
 from google.adk.agents.llm_agent import LlmAgent
 from typing import List, Dict, Any
 from pydantic import BaseModel, Field

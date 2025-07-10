@@ -1,11 +1,5 @@
-"""
-Tools for LinkedIn Post Reviewer Agent
-
-This module provides tools for analyzing and validating LinkedIn posts.
-"""
-
+# classification_reviewer/tools.py
 from typing import Any, Dict, List
-
 from google.adk.tools.tool_context import ToolContext
 
 def calculate_final_total(

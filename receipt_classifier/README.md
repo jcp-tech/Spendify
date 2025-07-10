@@ -18,10 +18,7 @@ This project processes messy OCR receipt data in several intelligent steps:
 
 ## 🗺️ Pipeline Flowchart
 
-<p align="center">
-    <img src="flow.png" alt="Receipt Classification Pipeline Flowchart" width="600"/>
-</p>
-
+![SPENDIFY Process Flow](flow.png)
 
 ---
 

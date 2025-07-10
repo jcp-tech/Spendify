@@ -4,12 +4,12 @@ Receipt Classification Validation Agent
 This agent validates that the grouped classification output matches the receipt totals.
 """
 
+# classification_reviewer/agent.py
 from google.adk.agents.llm_agent import LlmAgent
 from .tools import calculate_final_total, exit_function
 # from google.adk.tools import exit_loop
 
-# Constants
-GEMINI_MODEL = "gemini-2.0-flash"
+GEMINI_MODEL = "gemini-2.0-flash" # Constants
 
 validate_classification = LlmAgent(
     name="validate_classification",

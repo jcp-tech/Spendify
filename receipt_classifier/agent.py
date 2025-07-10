@@ -5,8 +5,8 @@ This module defines the root agent for the receipt classification application.
 It uses a sequential agent with an initial receipt classifier followed by a refinement loop.
 """
 
+# receipt_classifier/agent.py (Root Agent)
 from google.adk.agents import LoopAgent, SequentialAgent
-
 from .subagents.classifier_init import initial_classifier
 from .subagents.classification_grouper import grouping_classification
 from .subagents.classification_reviewer import validate_classification
@@ -22,7 +22,7 @@ from .subagents.classification_response import response_agent
 
 refinement_loop = LoopAgent(
     name="RefineClassificationLoop",
-    max_iterations=2,
+    max_iterations=10,
     sub_agents=[
         validate_classification,
         refine_classifier,
