@@ -1,4 +1,5 @@
 # classification_response/tools.py
+import json
 from typing import Dict, Any
 from google.adk.tools.tool_context import ToolContext
 
@@ -19,8 +20,5 @@ def save_to_firebase(
     # (Your firebase logic here...)
     # e.g., firebase_admin.firestore.client().collection(...).add(data)
     print("Saving to Firebase:", data)
-    for key, value in data.items():
-        print(f"{key}: {value}")
-    print("Data saved successfully.")
     # Simulate success:
-    return {"result": "success", "message": "Data saved to Firebase."}
+    return {"result": "success", "message": "Data saved to Firebase.", "data": json.dumps(data)}

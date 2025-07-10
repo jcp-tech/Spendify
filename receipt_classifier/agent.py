@@ -14,10 +14,10 @@ from .subagents.classification_refiner import refine_classifier
 from .subagents.classification_response import response_agent
 
 # SEQUENTIAL AGENT
-  # INITIAL CLASSIFIER AGENT
-  # LOOP AGENT
-    # VALIDATION AGENT (reviewer)
-    # CORRECTION AGENT (refiner)
+    # INITIAL CLASSIFIER AGENT
+    # LOOP AGENT
+        # VALIDATION AGENT (reviewer)
+        # CORRECTION AGENT (refiner)
     # RESPONSE AGENT (final response)
 
 refinement_loop = LoopAgent(

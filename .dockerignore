@@ -1,0 +1,36 @@
+# Docker ignore file
+.git
+.gitignore
+README.md
+Dockerfile*
+docker-compose.yml
+.dockerignore
+.env
+.venv
+venv/
+env/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+.pytest_cache/
+.coverage
+.nyc_output
+node_modules/
+npm-debug.log*
+.DS_Store
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Large datasets and ignore folder
+ignore/
+MapleMasala/
+receipt_classifier/
+
+# Temporary files
+*.tmp
+*.temp

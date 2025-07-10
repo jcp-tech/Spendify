@@ -14,3 +14,6 @@ google-cloud-vision
 Pillow
 google-adk
 litellm
+gunicorn
+pandas
+numpy

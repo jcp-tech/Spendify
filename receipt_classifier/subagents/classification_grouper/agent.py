@@ -6,6 +6,7 @@ Receipt Classification Grouping Agent
 from google.adk.agents.llm_agent import LlmAgent
 from typing import List, Dict, Any
 from pydantic import BaseModel, Field
+# from .tools import group_the_classification
 
 # Constants
 GEMINI_MODEL = "gemini-2.0-flash"
@@ -61,6 +62,7 @@ grouping_classification = LlmAgent(
     {stage_init_classification}
     """,
     description="Generates the Grouping JSON",
+    # tools=[group_the_classification],
     output_schema=ReceiptGroupingOutput,
     output_key="grouped_classification",
 )

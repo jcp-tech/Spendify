@@ -14,7 +14,8 @@ from firebase_store import (
 )
 from io import BytesIO
 from PIL import Image
-from .gcp_adk_classification import ADKClient
+from gcp_adk_classification import ADKClient
+from datetime import datetime
 
 # Load ENV
 load_dotenv()
@@ -42,6 +43,15 @@ def safe_sum(val1, val2):
         return [str(float(val1[0]) + float(val2[0]))]
     except Exception:
         return None
+
+@app.route('/health', methods=['GET'])
+def health_check():
+    """Health check endpoint for monitoring and load balancers"""
+    return jsonify({
+        'status': 'healthy',
+        'timestamp': datetime.now().isoformat(),
+        'service': 'spendify-api'
+    }), 200
 
 @app.route('/register', methods=['POST'])
 def register():
@@ -106,6 +116,7 @@ def upload():
     # Process with GCP
     try:
         logging.info("Calling GCP Document AI")
+        print(f"Processing file: {save_path}")
         document_dict, document_proto = extract_receipt_data(save_path)
         logging.info(f"GCP returned document with {len(document_proto.entities)} entities")
 
@@ -176,7 +187,7 @@ def upload():
     if line_items:
         logging.info(f"Classifying {len(line_items)} items for session {session_id} with totals {receipt_total_value}")
         try:
-            adk = ADKClient("http://localhost:8000", "receipt_classifier", user_id="user", session_id=session_id)
+            adk = ADKClient("http://localhost:8001", "receipt_classifier", user_id="user", session_id=session_id)
             prompt_txt = json.dumps({
                 "line_items": line_items,
                 "receipt_total_value": receipt_total_value,
@@ -194,8 +205,19 @@ def upload():
                 # Extract JSON only if you expect a structured response
                 classified_data = adk.extract_json_from_events(events)
                 if classified_data:
-                    logging.info("Final classified data:\n", json.dumps(classified_data, indent=2))
-                    save_summarised_data(date_str, session_id, classified_data, timestamp)
+                    if "result" in classified_data:
+                        if classified_data["result"] == "success":
+                            logging.info("Classification is said to be successful.")
+                            if "data" in classified_data:
+                                submission_data = classified_data["data"]
+                                # logging.info("Final submission data:\n", submission_data)
+                                logging.info(type(submission_data))
+                                submission_data = json.loads(submission_data) if isinstance(submission_data, str) else submission_data
+                                save_summarised_data(date_str, session_id, submission_data, timestamp)
+                            else:
+                                logging.error("No 'data' field in classification response.")
+                        else:
+                            logging.error(f"Error from classification response: {classified_data.get('message', 'Unknown error')}")
                 else:
                     logging.error("No structured JSON data found. Events received:")
                     # print(json.dumps(events, indent=2))
@@ -210,5 +232,7 @@ def upload():
     return jsonify({'status': 'processing', 'session_id': session_id}), 200
 
 if __name__ == '__main__':
-    logging.info(f"🌐 Starting API on port {API_PORT}")
+    # This will only run when called directly (for development/testing)
+    # In production, Gunicorn will import the 'app' object directly
+    logging.info(f"🌐 Starting API on port {API_PORT} (Development Mode)")
     app.run(host='0.0.0.0', port=API_PORT)

@@ -9,6 +9,7 @@ from datetime import datetime
 from dotenv import load_dotenv
 import firebase_admin
 from firebase_admin import credentials, firestore
+import pandas as pd
 
 # Setup logging
 logging.basicConfig(level=logging.INFO, format='[%(asctime)s] %(levelname)s: %(message)s')
@@ -82,3 +83,45 @@ def save_summarised_data(date_str, session_id, summary_dict, timestamp):
     payload = {**summary_dict} # 'timestamp': timestamp, 
     sum_ref.set(payload)
     logging.info("Summarised data saved under DATA/SUMMARISED_DATA")
+
+def get_all_summarised_data_as_df():
+    """
+    Get all summarised data as a DataFrame
+    """
+    logging.info("get_all_summarised_data_as_df")
+    all_data = []
+    # Get all the Timestams and their Corresponding Session IDs
+    sessions_to_check = {}
+    users_for_session = {}
+    collections = db.collection('SESSIONS').get()
+    for doc in collections:
+        session_id = doc.id
+        date_str = doc.to_dict().get('timestamp', '').split('T')[0]
+        if date_str in sessions_to_check.keys():
+            sessions_to_check[date_str].append(session_id)
+        else:
+            sessions_to_check[date_str] = [session_id]
+        users_for_session[session_id] = doc.to_dict().get('main_user', None)
+    for date_str, session_ids in sessions_to_check.items():
+        for uu_id in session_ids:
+            try:
+                sum_ref = db.collection('DATA').document('SUMMARISED_DATA').collection(date_str).document(uu_id)
+                sum_doc = sum_ref.get().to_dict()
+                if sum_doc: # sum_doc is not None and not sum_doc == {}:
+                    # {'time_taken_seconds': 65.73, 'categories': [{'category': 'Fast Food', 'total': 43.85, 'items': ['Pork Quesadilla', 'Fren Onion Soup', 'Pork Chop', 'Hanger Sizzle']}, {'category': 'Groceries', 'total': 9.95, 'items': ['Mozzarella&Tomato']}, {'category': 'Others', 'total': 0, 'items': []}], 'overall_total': '86.50'}
+                    items = []
+                    for key in sum_doc['categories']:
+                        if key['total'] != 0:
+                            items.append({
+                                'user_id': users_for_session[uu_id],
+                                'date': date_str,
+                                # 'session_id': uu_id,
+                                'category': key['category'],
+                                'total': key['total'],
+                            })
+                    all_data += items
+            except Exception as e:
+                logging.error(f"Error fetching summarised data for {date_str}/{uu_id}: {e}")
+                continue
+    return pd.DataFrame(all_data)
+print(get_all_summarised_data_as_df())
