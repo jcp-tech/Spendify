@@ -12,9 +12,9 @@ from firebase_store import (
     get_primary_id, create_user,
     save_session_meta, save_raw_data, save_receipt_data, save_summarised_data
 )
-from receipt_classifier import init_classifier, run as classify_run
 from io import BytesIO
 from PIL import Image
+from .gcp_adk_classification import ADKClient
 
 # Load ENV
 load_dotenv()
@@ -28,9 +28,6 @@ DEFAULT_VISION_MODEL = os.getenv("VISION_MODEL", "llava")
 # Setup logging
 logging.basicConfig(level=logging.INFO, format='[%(asctime)s] %(levelname)s: %(message)s')
 app = Flask(__name__)
-
-# 🔁 MODELS INIT
-init_classifier(primary=DEFAULT_MAIN_MODEL, fallback=DEFAULT_FALLBACK_MODEL, vision=DEFAULT_VISION_MODEL)
 
 def image_to_base64(image_path):
     with Image.open(image_path) as img:
@@ -179,19 +176,31 @@ def upload():
     if line_items:
         logging.info(f"Classifying {len(line_items)} items for session {session_id} with totals {receipt_total_value}")
         try:
-            # Run new classifier with both line_items and total!
-            summary = classify_run(
-                line_items,
-                receipt_total_value=receipt_total_value,
-                raw_data=grouped,
-                image_b64=image_b64,
-                optimize=optimize,
-            )
-            if summary is None or (isinstance(summary, dict) and summary.get("error")):
-                logging.error(f"Classification failed for session {session_id}. Not saving summary.")
+            adk = ADKClient("http://localhost:8000", "receipt_classifier", user_id="user", session_id=session_id)
+            prompt_txt = json.dumps({
+                "line_items": line_items,
+                "receipt_total_value": receipt_total_value,
+                "grouped": grouped
+            }, indent=2)
+            # Create a new session (POST)
+            session_resp = adk.get_or_create_session(method="POST", custom_session=True)
+            if session_resp and 'id' in session_resp:
+                session_id = session_resp['id']
+                # print(f"Session created: {session_id}")
             else:
-                save_summarised_data(date_str, session_id, summary, timestamp)
-                logging.info("Summarised (classified) data saved under DATA/SUMMARISED_DATA")
+                pass # Handle session creation failure if needed | NOTE-TODO
+            events = adk.run_sse(session_id, prompt_txt)
+            if events is not None:
+                # Extract JSON only if you expect a structured response
+                classified_data = adk.extract_json_from_events(events)
+                if classified_data:
+                    logging.info("Final classified data:\n", json.dumps(classified_data, indent=2))
+                    save_summarised_data(date_str, session_id, classified_data, timestamp)
+                else:
+                    logging.error("No structured JSON data found. Events received:")
+                    # print(json.dumps(events, indent=2))
+            else:
+                logging.error("No events received.")
         except Exception as e:
             logging.exception(f"Classification failed for session {session_id}: {e}")
     else:
