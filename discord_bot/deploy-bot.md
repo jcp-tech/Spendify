@@ -1,19 +1,6 @@
 # 📝 Documentation: Running a Discord Bot with `tmux` on Google Cloud VM
 
 ---
-
-## Table of Contents
-
-1. Installing tmux
-2. Starting a tmux Session
-3. Running Your Bot Inside tmux
-4. Detaching and Reattaching
-5. Managing tmux Sessions
-6. SSH Access to Your GCP VM
-7. Best Practices
-8. Quick Reference
-
----
 <!-- 
 ## Installing Python 3.10 on Ubuntu (GCP VM)
 
@@ -172,7 +159,7 @@ scp -i <path to private key> <local file path> <username>@<ip address>:<remote d
 **Example command:**
 
 ```bash
-scp -i "C:\Users\JonathanChackoPattas\.ssh\seneca_temp" "C:\Users\JonathanChackoPattas\OneDrive - Maritime Support Solutions\Desktop\Spendify\<local_file_name>" azuread\jonathanchackopattas@34.132.211.201:~/spendify_bot
+scp -i "C:\Users\JonathanChackoPattas\.ssh\seneca_temp" "C:\Users\JonathanChackoPattas\OneDrive - Maritime Support Solutions\Desktop\Spendify\discord_bot\<local_file_name>" azuread\jonathanchackopattas@34.132.211.201:~/spendify_bot
 ```
 scp -i "C:\Users\JonathanChackoPattas\.ssh\seneca_temp" "C:\Users\JonathanChackoPattas\OneDrive - Maritime Support Solutions\Desktop\Spendify\<local_file_name>" azuread\jonathanchackopattas@discord-bot-spendify-deploy:~/spendify_bot
 
