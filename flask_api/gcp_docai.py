@@ -30,15 +30,23 @@ def set_gc_credentials():
     service_account_file = os.getenv('GOOGLE_APPLICATION_PATH')
     logging.info(f"Setting Google Cloud credentials from: {service_account_file}")
     if not service_account_file or not os.path.exists(service_account_file):
+        code_current_dir = os.path.dirname(os.path.abspath(__file__))
         msg = f"Service account file not found at: {service_account_file}"
         logging.error(msg)
-        raise FileNotFoundError(msg)
+        cred_path = os.path.join(code_current_dir, 'firebase_credentials.json')
+        if not os.path.exists(cred_path):
+            logging.error(f"Firebase credentials file not found at: {cred_path}")
+            raise FileNotFoundError(msg)
     os.environ['GOOGLE_APPLICATION_CREDENTIALS'] = service_account_file
     logging.info("Google Cloud credentials set")
 
 def extract_receipt_data(file_path, mime_type='image/jpeg'):
     set_gc_credentials()
     processor_url = os.getenv('DOCUMENT_AI_PROCESSOR_URL')
+    if not processor_url:
+        msg = "DOCUMENT_AI_PROCESSOR_URL environment variable is not set"
+        logging.error(msg)
+        raise ValueError(msg)
     config = parse_processor_url(processor_url)
 
     client = documentai.DocumentProcessorServiceClient()

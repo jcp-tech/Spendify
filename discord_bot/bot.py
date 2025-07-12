@@ -15,7 +15,7 @@ from functools import partial
 load_dotenv()
 
 DISCORD_TOKEN = os.getenv('DISCORD_TOKEN')
-API_BASE = os.getenv('API_URL', 'http://127.0.0.1:8000')
+API_BASE = os.getenv('API_URL', 'http://127.0.0.1:5000')
 OPTIMISE = os.getenv('OPTIMISE', 'True')
 
 intents = discord.Intents.default()

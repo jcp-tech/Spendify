@@ -1,0 +1,11 @@
+
+google-cloud-documentai
+google-cloud-vision
+firebase-admin
+python-dotenv
+requests
+gunicorn
+flask
+Pillow
+pandas
+numpy

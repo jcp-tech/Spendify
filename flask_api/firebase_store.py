@@ -19,9 +19,16 @@ load_dotenv()
 cred_path = os.getenv('FIREBASE_CREDENTIALS')
 logging.info(f"Loading Firebase credentials from: {cred_path}")
 if not cred_path or not os.path.exists(cred_path):
+    code_current_dir = os.path.dirname(os.path.abspath(__file__))
     msg = f"Firebase credentials file not found at: {cred_path}"
     logging.error(msg)
-    raise FileNotFoundError(msg)
+    # raise FileNotFoundError(msg)
+    # Look in current directory for `firebase_credentials.json`
+    cred_path = os.path.join(code_current_dir, 'firebase_credentials.json')
+    if not os.path.exists(cred_path):
+        logging.error(f"Firebase credentials file not found at: {cred_path}")
+        raise FileNotFoundError(msg)
+
 
 cred = credentials.Certificate(cred_path)
 firebase_admin.initialize_app(cred)

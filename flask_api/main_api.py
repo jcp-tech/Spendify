@@ -20,11 +20,7 @@ from datetime import datetime
 # Load ENV
 load_dotenv()
 API_PORT = int(os.getenv('API_PORT', 5000))
-
-# Set default models if not passed via CLI
-DEFAULT_MAIN_MODEL = os.getenv("MAIN_MODEL", "llama3")
-DEFAULT_FALLBACK_MODEL = os.getenv("FALLBACK_MODEL", "mistral")
-DEFAULT_VISION_MODEL = os.getenv("VISION_MODEL", "llava")
+CLASSIFICATION_URL = os.getenv('CLASSIFICATION_URL', 'http://localhost:8000')
 
 # Setup logging
 logging.basicConfig(level=logging.INFO, format='[%(asctime)s] %(levelname)s: %(message)s')
@@ -152,9 +148,9 @@ def upload():
     logging.info("Saving receipt data under DATA/RECEIPTS")
     save_receipt_data(date_str, session_id, grouped, timestamp)
 
-    # === CLASSIFICATION & SUMMARY SECTION ===
-    logging.info("Converting image to base64 for classification")
-    image_b64 = image_to_base64(save_path)
+    # # === CLASSIFICATION & SUMMARY SECTION ===
+    # logging.info("Converting image to base64 for classification")
+    # image_b64 = image_to_base64(save_path)
 
     # 1. Extract line_items (flexible key search)
     line_items = (
@@ -187,7 +183,7 @@ def upload():
     if line_items:
         logging.info(f"Classifying {len(line_items)} items for session {session_id} with totals {receipt_total_value}")
         try:
-            adk = ADKClient("http://localhost:8000", "receipt_classifier", user_id="user", session_id=session_id)
+            adk = ADKClient(CLASSIFICATION_URL, "receipt_classifier", user_id="user", session_id=session_id)
             prompt_txt = json.dumps({
                 "line_items": line_items,
                 "receipt_total_value": receipt_total_value,
