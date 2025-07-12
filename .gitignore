@@ -6,5 +6,6 @@
 **/img_content
 **/uploads
 /.venv # /MapleMasala
+/ignore-notes.md
 **/gcp_service_account.json
 **/firebase_credentials.json

@@ -168,18 +168,36 @@ DATA/
 ### Project Structure
 ```
 Spendify/
-├── bot.py                      # Discord bot
-├── main_api.py                 # Main API server
-├── gcp_docai.py               # OCR processing
-├── firebase_store.py          # Data storage
-├── gcp_adk_classification.py  # ADK client
-├── receipt_classifier/        # Agent pipeline
-│   ├── agent.py              # Root agent
-│   ├── subagents/            # Individual agents
-│   └── schemas/              # Data schemas
-├── img_content/              # Local image storage
-├── uploads/                  # API uploads
-└── requirements.txt          # Dependencies
+├── discord_bot/               # Discord bot module
+│   ├── bot.py                # Main Discord bot
+│   ├── requirements.txt      # Bot dependencies
+│   ├── deploy-bot.md         # Bot deployment guide
+│   └── .env.template         # Environment template
+├── flask_api/                # Main API server module
+│   ├── main_api.py           # Flask API server
+│   ├── gcp_docai.py          # OCR processing
+│   ├── firebase_store.py     # Data storage
+│   ├── gcp_adk_classification.py # ADK client
+│   ├── requirements.txt      # API dependencies
+│   ├── deploy-api.md         # API deployment guide
+│   ├── Dockerfile.api        # Docker configuration
+│   ├── uploads/              # API file uploads
+│   └── .env.template         # Environment template
+├── adk_pipeline/             # Agent Development Kit pipeline
+│   ├── receipt_classifier/   # Agent pipeline
+│   │   ├── agent.py          # Root agent
+│   │   ├── subagents/        # Individual agents
+│   │   └── __init__.py       # Package initialization
+│   ├── requirements.txt      # ADK dependencies
+│   ├── deploy-adk.md         # ADK deployment guide
+│   ├── flow.png              # Pipeline flow diagram
+│   └── README.md             # ADK documentation
+├── dashboard/                # UI dashboard module
+│   ├── requirements.txt      # Dashboard dependencies
+│   ├── deploy-ui.md          # Dashboard deployment guide
+│   └── .env.template         # Environment template
+├── process.png               # System process diagram
+└── README.md                 # Project documentation
 ```
 
 ### Adding New Features

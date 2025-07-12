@@ -7,7 +7,7 @@
 ## 1️⃣ Set Active GCP Project
 
 ```bash
-gcloud config set project spendify-mapple-masala
+gcloud config set project $GOOGLE_CLOUD_PROJECT
 ```
 
 ---
@@ -21,9 +21,11 @@ gcloud services enable run.googleapis.com containerregistry.googleapis.com cloud
 ---
 
 ## 3️⃣ Build & Push Docker Image (using Dockerfile.api)
-
+<!-- NOTE: If your using a Dockerfile.api then you need a YML file also. -->
 ```bash
-gcloud builds submit --tag gcr.io/spendify-mapple-masala/spendify-main --dockerfile Dockerfile.api .
+gcloud builds submit \
+    --tag gcr.io/$GOOGLE_CLOUD_PROJECT/$SERVICE_NAME \
+    --dockerfile Dockerfile .
 ```
 
 ---
@@ -31,10 +33,10 @@ gcloud builds submit --tag gcr.io/spendify-mapple-masala/spendify-main --dockerf
 ## 4️⃣ Deploy to Cloud Run (Flask, port 5000)
 
 ```bash
-gcloud run deploy spendify-main \
-  --image gcr.io/spendify-mapple-masala/spendify-main \
+gcloud run deploy $SERVICE_NAME \
+  --image gcr.io/$GOOGLE_CLOUD_PROJECT/$SERVICE_NAME \
   --platform managed \
-  --region us-central1 \
+  --region $GOOGLE_CLOUD_LOCATION \
   --allow-unauthenticated \
   --memory 1Gi \
   --port 5000
@@ -45,8 +47,12 @@ gcloud run deploy spendify-main \
 ## 5️⃣ Check Logs (optional)
 
 ```bash
-gcloud logging read "resource.type=cloud_run_revision AND resource.labels.service_name=spendify-main" \
-  --project=spendify-mapple-masala --limit=50 --freshness=1h --format="value(textPayload)"
+gcloud logging read \
+  "resource.type=cloud_run_revision AND resource.labels.service_name=$SERVICE_NAME" \
+  --project=$GOOGLE_CLOUD_PROJECT \
+  --limit=50 \
+  --freshness=1h \
+  --format="value(textPayload)"
 ```
 
 ---
@@ -54,9 +60,9 @@ gcloud logging read "resource.type=cloud_run_revision AND resource.labels.servic
 ## 6️⃣ (Optional) Delete Old Service/Image
 
 ```bash
-gcloud run services delete spendify-main --region=us-central1
+gcloud run services delete $SERVICE_NAME --region=$GOOGLE_CLOUD_LOCATION
 
-gcloud container images delete gcr.io/spendify-mapple-masala/spendify-main --quiet
+gcloud container images delete gcr.io/$GOOGLE_CLOUD_PROJECT/$SERVICE_NAME --quiet
 ```
 
 ---
@@ -65,10 +71,10 @@ gcloud container images delete gcr.io/spendify-mapple-masala/spendify-main --qui
 
 | Step            | Command                                                                                                                                                                                          |
 | --------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| **Build Image** | `gcloud builds submit --tag gcr.io/spendify-mapple-masala/spendify-main --dockerfile Dockerfile.api .`                                                                                           |
-| **Deploy**      | `gcloud run deploy spendify-main --image gcr.io/spendify-mapple-masala/spendify-main --platform managed --region us-central1 --allow-unauthenticated --memory 1Gi --port 5000`                   |
-| **View Logs**   | `gcloud logging read "resource.type=cloud_run_revision AND resource.labels.service_name=spendify-main" --project=spendify-mapple-masala --limit=50 --freshness=1h --format="value(textPayload)"` |
-| **Delete**      | `gcloud run services delete spendify-main --region=us-central1`<br>`gcloud container images delete gcr.io/spendify-mapple-masala/spendify-main --quiet`                                          |
+| **Build Image** | `gcloud builds submit --tag gcr.io/$GOOGLE_CLOUD_PROJECT/$SERVICE_NAME --dockerfile Dockerfile .`                                                                                               |
+| **Deploy**      | `gcloud run deploy $SERVICE_NAME --image gcr.io/$GOOGLE_CLOUD_PROJECT/$SERVICE_NAME --platform managed --region $GOOGLE_CLOUD_LOCATION --allow-unauthenticated --memory 1Gi --port 5000`         |
+| **View Logs**   | `gcloud logging read "resource.type=cloud_run_revision AND resource.labels.service_name=$SERVICE_NAME" --project=$GOOGLE_CLOUD_PROJECT --limit=50 --freshness=1h --format="value(textPayload)"`  |
+| **Delete**      | `gcloud run services delete $SERVICE_NAME --region=$GOOGLE_CLOUD_LOCATION`<br>`gcloud container images delete gcr.io/$GOOGLE_CLOUD_PROJECT/$SERVICE_NAME --quiet`                                 |
 
 ---
 
