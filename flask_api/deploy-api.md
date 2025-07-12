@@ -35,7 +35,7 @@ gcloud run deploy $SERVICE_NAME \
   --image gcr.io/$GOOGLE_CLOUD_PROJECT/$SERVICE_NAME \
   --platform managed \
   --region $GOOGLE_CLOUD_LOCATION \
-  --allow-unauthenticated \
+  --allow-unauthenticated
 ```
 
 ---
