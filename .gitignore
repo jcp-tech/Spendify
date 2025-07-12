@@ -5,6 +5,6 @@
 **/*__pycache__*/
 **/img_content
 **/uploads
-/MapleMasala
+/.venv # /MapleMasala
 **/gcp_service_account.json
 **/firebase_credentials.json

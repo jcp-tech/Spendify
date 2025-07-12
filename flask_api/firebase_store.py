@@ -131,4 +131,4 @@ def get_all_summarised_data_as_df():
                 logging.error(f"Error fetching summarised data for {date_str}/{uu_id}: {e}")
                 continue
     return pd.DataFrame(all_data)
-print(get_all_summarised_data_as_df())
+# print(get_all_summarised_data_as_df())
