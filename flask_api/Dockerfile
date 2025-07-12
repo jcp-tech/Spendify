@@ -13,14 +13,14 @@ RUN apt-get update && \
 RUN pip install --no-cache-dir -r requirements.txt
 
 # Expose Flask port
-EXPOSE 5000
+EXPOSE 8080
 
 # (Choose ONE of the following for CMD)
 # 1. Use flask run (if installed and your requirements.txt has Flask)
-# CMD ["flask", "run", "--host=0.0.0.0", "--port=5000"]
+# CMD ["flask", "run", "--host=0.0.0.0", "--port=8080"]
 
 # 2. Run with Python directly (if your app runs with python main.py)
 CMD ["python", "main.py"]
 
 # 3. Use Gunicorn for production
-# CMD ["gunicorn", "-w", "4", "-b", "0.0.0.0:5000", "main:app"]
+# CMD ["gunicorn", "-w", "4", "-b", "0.0.0.0:8080", "main:app"]
