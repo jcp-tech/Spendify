@@ -36,7 +36,6 @@ gcloud run deploy $SERVICE_NAME \
   --platform managed \
   --region $GOOGLE_CLOUD_LOCATION \
   --allow-unauthenticated \
-  --port 5000
 ```
 
 ---
@@ -56,7 +55,7 @@ gcloud container images delete gcr.io/$GOOGLE_CLOUD_PROJECT/$SERVICE_NAME --quie
 | Step            | Command                                                                                                                                                                                          |
 | --------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | **Build Image** | `gcloud builds submit --tag gcr.io/$GOOGLE_CLOUD_PROJECT/$SERVICE_NAME .`                                                                                               |
-| **Deploy**      | `gcloud run deploy $SERVICE_NAME --image gcr.io/$GOOGLE_CLOUD_PROJECT/$SERVICE_NAME --platform managed --region $GOOGLE_CLOUD_LOCATION --allow-unauthenticated --port 5000`         |
+| **Deploy**      | `gcloud run deploy $SERVICE_NAME --image gcr.io/$GOOGLE_CLOUD_PROJECT/$SERVICE_NAME --platform managed --region $GOOGLE_CLOUD_LOCATION --allow-unauthenticated`         |
 | **View Logs**   | `gcloud logging read "resource.type=cloud_run_revision AND resource.labels.service_name=$SERVICE_NAME" --project=$GOOGLE_CLOUD_PROJECT --limit=50 --freshness=1h --format="value(textPayload)"`  |
 | **Delete**      | `gcloud run services delete $SERVICE_NAME --region=$GOOGLE_CLOUD_LOCATION`<br>`gcloud container images delete gcr.io/$GOOGLE_CLOUD_PROJECT/$SERVICE_NAME --quiet`                                 |
 
