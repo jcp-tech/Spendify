@@ -203,3 +203,5 @@ Spendify/
 3. Add tests for new functionality
 4. Update documentation
 5. Submit pull request
+
+![SPENDIFY Process Flow](process.png)
