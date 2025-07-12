@@ -1,8 +1,3 @@
-"""
-PIP installs:
-pip install firebase-admin python-dotenv
-"""
-
 import os
 import logging
 from datetime import datetime
@@ -28,7 +23,6 @@ if not cred_path or not os.path.exists(cred_path):
     if not os.path.exists(cred_path):
         logging.error(f"Firebase credentials file not found at: {cred_path}")
         raise FileNotFoundError(msg)
-
 
 cred = credentials.Certificate(cred_path)
 firebase_admin.initialize_app(cred)
@@ -91,7 +85,7 @@ def save_summarised_data(date_str, session_id, summary_dict, timestamp):
     sum_ref.set(payload)
     logging.info("Summarised data saved under DATA/SUMMARISED_DATA")
 
-def get_all_summarised_data_as_df():
+def get_all_summarised_data_as_df(USERNAME=None):
     """
     Get all summarised data as a DataFrame
     """
@@ -130,5 +124,8 @@ def get_all_summarised_data_as_df():
             except Exception as e:
                 logging.error(f"Error fetching summarised data for {date_str}/{uu_id}: {e}")
                 continue
-    return pd.DataFrame(all_data)
+    df = pd.DataFrame(all_data)
+    if USERNAME:
+        df = df[df['user_id'] == USERNAME]
+    return df
 # print(get_all_summarised_data_as_df())

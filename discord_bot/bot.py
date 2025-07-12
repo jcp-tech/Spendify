@@ -1,8 +1,3 @@
-"""
-PIP installs:
-pip install -U discord.py python-dotenv requests
-"""
-
 import os, uuid
 import requests
 from dotenv import load_dotenv
@@ -16,7 +11,7 @@ load_dotenv()
 
 DISCORD_TOKEN = os.getenv('DISCORD_TOKEN')
 API_BASE = os.getenv('API_URL', 'http://127.0.0.1:5000')
-OPTIMISE = os.getenv('OPTIMISE', 'True')
+OPTIMISE = os.getenv('OPTIMISE', 'True') # This isnt used anymore.
 
 intents = discord.Intents.default()
 intents.message_content = True

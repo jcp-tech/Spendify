@@ -1,16 +1,11 @@
-"""
-PIP installs:
-pip install flask python-dotenv google-cloud-documentai firebase-admin
-pip install langchain langchain-ollama langgraph
-"""
-
 import os, logging, sys, json, base64
 from flask import Flask, request, jsonify
 from dotenv import load_dotenv
 from gcp_docai import extract_receipt_data
 from firebase_store import (
     get_primary_id, create_user,
-    save_session_meta, save_raw_data, save_receipt_data, save_summarised_data
+    save_session_meta, save_raw_data, save_receipt_data, save_summarised_data,
+    get_all_summarised_data_as_df
 )
 from io import BytesIO
 from PIL import Image
@@ -26,19 +21,19 @@ CLASSIFICATION_URL = os.getenv('CLASSIFICATION_URL', 'http://localhost:8000')
 logging.basicConfig(level=logging.INFO, format='[%(asctime)s] %(levelname)s: %(message)s')
 app = Flask(__name__)
 
-def image_to_base64(image_path):
-    with Image.open(image_path) as img:
-        buffered = BytesIO()
-        if img.mode == 'RGBA':
-            img = img.convert('RGB')
-        img.save(buffered, format="JPEG")
-        return base64.b64encode(buffered.getvalue()).decode("utf-8")
-
 def safe_sum(val1, val2):
     try:
         return [str(float(val1[0]) + float(val2[0]))]
     except Exception:
         return None
+
+# def image_to_base64(image_path):
+#     with Image.open(image_path) as img:
+#         buffered = BytesIO()
+#         if img.mode == 'RGBA':
+#             img = img.convert('RGB')
+#         img.save(buffered, format="JPEG")
+#         return base64.b64encode(buffered.getvalue()).decode("utf-8")
 
 @app.route('/health', methods=['GET'])
 def health_check():
@@ -226,6 +221,17 @@ def upload():
 
     logging.info(f"Completed processing for session {session_id}")
     return jsonify({'status': 'processing', 'session_id': session_id}), 200
+
+@app.route('/get_data', methods=['GET'])
+def get_data():
+    # If Username is provided, return summarised data for that user
+    username = request.args.get('username') or None
+    df = get_all_summarised_data_as_df(USERNAME=username)
+    if df.empty:
+        logging.warning("No summarised data found")
+        return jsonify({'error': 'No data found'}), 404
+    logging.info(f"Returning summarised data for {len(df)} records")
+    return jsonify(df.to_dict(orient='records'))
 
 if __name__ == '__main__':
     # This will only run when called directly (for development/testing)

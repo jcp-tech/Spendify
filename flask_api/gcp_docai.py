@@ -1,8 +1,3 @@
-"""
-PIP installs:
-pip install --upgrade google-cloud-documentai python-dotenv
-"""
-
 import os
 import logging
 from urllib.parse import urlparse
