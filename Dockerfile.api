@@ -1,34 +1,26 @@
-# Dockerfile for Flask API (main_api.py)
-FROM python:3.11-slim
+FROM python:3.10-slim
 
-# Set working directory
+ENV DEBIAN_FRONTEND=noninteractive
+
 WORKDIR /app
 
-# Install system dependencies
-RUN apt-get update && apt-get install -y \
-    gcc \
-    g++ \
-    curl \
-    && rm -rf /var/lib/apt/lists/*
-
-# Copy requirements first for better caching
-COPY requirements.txt .
-
-# Install Python dependencies
-RUN pip install --no-cache-dir -r requirements.txt
-
-# Copy application code
 COPY . .
 
-# Create uploads directory
-RUN mkdir -p uploads
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends gcc libglib2.0-0 libsm6 libxext6 libxrender-dev && \
+    rm -rf /var/lib/apt/lists/*
 
-# Expose the port that Flask will run on
-EXPOSE 8000
+RUN pip install --no-cache-dir -r requirements.txt
 
-# Set environment variables
-ENV PYTHONPATH=/app
-ENV FLASK_APP=main_api.py
+# Expose Flask port
+EXPOSE 5000
 
-# Run the Flask API with Gunicorn
-CMD ["gunicorn", "-c", "gunicorn.conf.py", "main_api:app"]
+# (Choose ONE of the following for CMD)
+# 1. Use flask run (if installed and your requirements.txt has Flask)
+# CMD ["flask", "run", "--host=0.0.0.0", "--port=5000"]
+
+# 2. Run with Python directly (if your app runs with python main.py)
+CMD ["python", "main.py"]
+
+# 3. Use Gunicorn for production
+# CMD ["gunicorn", "-w", "4", "-b", "0.0.0.0:5000", "main:app"]

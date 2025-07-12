@@ -19,7 +19,7 @@ from datetime import datetime
 
 # Load ENV
 load_dotenv()
-API_PORT = int(os.getenv('API_PORT', 8000))
+API_PORT = int(os.getenv('API_PORT', 5000))
 
 # Set default models if not passed via CLI
 DEFAULT_MAIN_MODEL = os.getenv("MAIN_MODEL", "llama3")
@@ -187,7 +187,7 @@ def upload():
     if line_items:
         logging.info(f"Classifying {len(line_items)} items for session {session_id} with totals {receipt_total_value}")
         try:
-            adk = ADKClient("http://localhost:8001", "receipt_classifier", user_id="user", session_id=session_id)
+            adk = ADKClient("http://localhost:8000", "receipt_classifier", user_id="user", session_id=session_id)
             prompt_txt = json.dumps({
                 "line_items": line_items,
                 "receipt_total_value": receipt_total_value,

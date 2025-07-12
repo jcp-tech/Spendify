@@ -25,6 +25,8 @@ npm-debug.log*
 *.swp
 *.swo
 *~
+test.py
+tkUser.py
 
 # Large datasets and ignore folder
 ignore/
