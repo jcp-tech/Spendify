@@ -14,7 +14,7 @@ from datetime import datetime
 
 # Load ENV
 load_dotenv()
-API_PORT = int(os.getenv('API_PORT', 5000))
+API_PORT = int(os.getenv('API_PORT', 8080))
 CLASSIFICATION_URL = os.getenv('CLASSIFICATION_URL', 'http://localhost:8000')
 
 # Setup logging
