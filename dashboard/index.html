@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SpendSmart AI Dashboard</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    body { font-family: 'Segoe UI', sans-serif; margin: 0; background: #f9f9fc; }
+    .sidebar {
+      width: 220px; background: #fff; height: 100vh; position: fixed;
+      border-right: 1px solid #e0e0e0; padding: 1rem;
+    }
+    .sidebar h2 { color: #6246ea; margin-bottom: 2rem; }
+    .sidebar nav a {
+      display: block; padding: 10px; text-decoration: none; color: #333;
+      border-radius: 5px; margin-bottom: 0.5rem;
+    }
+    .sidebar nav a:hover { background: #f0f0f0; }
+    .main {
+      margin-left: 240px; padding: 2rem;
+    }
+    .header { margin-bottom: 2rem; }
+    .header h1 { margin: 0; font-size: 2rem; }
+    .cards {
+      display: flex; gap: 1rem; margin-bottom: 2rem;
+    }
+    .card {
+      background: white; border-radius: 10px; padding: 1rem 1.5rem;
+      flex: 1; box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    }
+    .charts {
+      display: flex; gap: 1rem; margin-bottom: 2rem;
+    }
+    .chart-box {
+      background: white; border-radius: 10px; padding: 1rem;
+      flex: 1; box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    }
+    .quick-tips {
+      background: white; border-radius: 10px; padding: 1rem 1.5rem;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    }
+    .quick-tips h3 { margin-top: 0; }
+    .quick-tips ul { padding-left: 1.2rem; }
+  </style>
+</head>
+<body>
+  <div class="sidebar">
+    <h2>SpendSmart</h2>
+    <nav>
+      <a href="#">🏠 Dashboard</a>
+      <a href="#">📤 Upload Receipt</a>
+      <a href="#">📊 Insights</a>
+    </nav>
+  </div>
+
+  <div class="main">
+    <div class="header">
+      <h1>Welcome back, <span id="username">Alex</span>!</h1>
+      <p>Here's an overview of your spending habits</p>
+    </div>
+
+    <div class="cards">
+      <div class="card">
+        <h3>Total Spend This Month</h3>
+        <p id="totalSpend">$0</p>
+      </div>
+      <div class="card">
+        <h3>Average Daily Spend</h3>
+        <p id="avgDailySpend">$0</p>
+      </div>
+      <div class="card">
+        <h3>Highest Spend Category</h3>
+        <p id="topCategory">-</p>
+      </div>
+    </div>
+
+    <div class="charts">
+      <div class="chart-box">
+        <h4>Expense Categories</h4>
+        <canvas id="categoryChart"></canvas>
+      </div>
+      <div class="chart-box">
+        <h4>Weekly Spending</h4>
+        <canvas id="weeklyChart"></canvas>
+      </div>
+    </div>
+
+    <div class="quick-tips">
+      <h3>Quick Tips</h3>
+      <ul>
+        <li>🍔 Try reducing fast food to save extra $40/month.</li>
+        <li>🛒 Buy groceries in bulk when possible.</li>
+      </ul>
+    </div>
+  </div>
+
+  <script>
+    const userId = 'alex';
+
+    fetch(`http://127.0.0.1:5000/summary?user_id=${userId}`)
+      .then(res => res.json())
+      .then(data => {
+        document.getElementById('username').textContent = userId.charAt(0).toUpperCase() + userId.slice(1);
+        document.getElementById('totalSpend').textContent = `$${data.total_monthly_spend.toFixed(2)}`;
+        document.getElementById('avgDailySpend').textContent = `$${data.average_daily_spend.toFixed(2)}`;
+        document.getElementById('topCategory').textContent = `${data.top_category} ($${data.top_category_total.toFixed(2)})`;
+
+        new Chart(document.getElementById('categoryChart'), {
+          type: 'doughnut',
+          data: {
+            labels: data.expense_by_category.labels,
+            datasets: [{
+              data: data.expense_by_category.values,
+              backgroundColor: ["#f87171", "#fbbf24", "#34d399", "#60a5fa", "#c084fc"]
+            }]
+          },
+          options: {
+            plugins: { legend: { position: 'bottom' } }
+          }
+        });
+
+        new Chart(document.getElementById('weeklyChart'), {
+          type: 'bar',
+          data: {
+            labels: data.weekly_spending.labels,
+            datasets: [{
+              label: 'Amount Spent',
+              data: data.weekly_spending.values,
+              backgroundColor: '#8b5cf6'
+            }]
+          }
+        });
+      });
+  </script>
+</body>
+</html>

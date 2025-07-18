@@ -9,3 +9,4 @@
 /ignore-notes.md
 **/gcp_service_account.json
 **/firebase_credentials.json
+/flask_api/templates
