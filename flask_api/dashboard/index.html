@@ -96,9 +96,9 @@
   </div>
 
   <script>
-    const userId = 'alex';
+    const userId = 'jojo';
 
-    fetch(`http://127.0.0.1:5000/summary?user_id=${userId}`)
+    fetch(`/summary?user_id=${userId}`)
       .then(res => res.json())
       .then(data => {
         document.getElementById('username').textContent = userId.charAt(0).toUpperCase() + userId.slice(1);
