@@ -1,5 +1,5 @@
 import os, logging, sys, json, base64
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, send_from_directory
 from dotenv import load_dotenv
 from gcp_docai import extract_receipt_data
 from firebase_store import (
@@ -11,6 +11,8 @@ from io import BytesIO
 from PIL import Image
 from gcp_adk_classification import ADKClient
 from datetime import datetime
+import calendar
+import pandas as pd
 
 # Load ENV
 load_dotenv()
@@ -21,11 +23,58 @@ CLASSIFICATION_URL = os.getenv('CLASSIFICATION_URL', 'http://localhost:8000')
 logging.basicConfig(level=logging.INFO, format='[%(asctime)s] %(levelname)s: %(message)s')
 app = Flask(__name__)
 
+# Directory to serve the dashboard HTML from
+DASHBOARD_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "dashboard")
+
 def safe_sum(val1, val2):
     try:
         return [str(float(val1[0]) + float(val2[0]))]
     except Exception:
         return None
+
+
+# Route to serve the dashboard UI
+@app.route('/', methods=['GET'])
+def serve_dashboard():
+    """Serve the dashboard HTML page"""
+    return send_from_directory(DASHBOARD_DIR, 'index.html')
+
+
+# Route providing aggregated summary for a specific user
+@app.route('/summary', methods=['GET'])
+def summary():
+    user_id = request.args.get('user_id', 'jojo')
+    df = get_all_summarised_data_as_df(USERNAME=user_id)
+    if df.empty:
+        return jsonify({'error': 'No data found'}), 404
+
+    total_spend = df['total'].sum()
+    avg_daily_spend = total_spend / df['date'].nunique()
+
+    category_totals = df.groupby('category')['total'].sum().to_dict()
+    top_category = max(category_totals.items(), key=lambda x: x[1])
+
+    expense_by_category = {
+        'labels': list(category_totals.keys()),
+        'values': [round(v, 2) for v in category_totals.values()]
+    }
+
+    df['weekday'] = pd.to_datetime(df['date']).dt.day_name()
+    weekly = df.groupby('weekday')['total'].sum().to_dict()
+    ordered_week = [calendar.day_name[i] for i in range(7)]
+    weekly_spending = {
+        'labels': ordered_week,
+        'values': [round(weekly.get(day, 0.0), 2) for day in ordered_week]
+    }
+
+    return jsonify({
+        'total_monthly_spend': round(total_spend, 2),
+        'average_daily_spend': round(avg_daily_spend, 2),
+        'top_category': top_category[0],
+        'top_category_total': round(top_category[1], 2),
+        'expense_by_category': expense_by_category,
+        'weekly_spending': weekly_spending
+    })
 
 # def image_to_base64(image_path):
 #     with Image.open(image_path) as img:
