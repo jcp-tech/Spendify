@@ -128,3 +128,4 @@ def get_all_summarised_data_as_df(USERNAME=None):
     if USERNAME:
         df = df[df['user_id'] == USERNAME]
     return df
+# print(get_all_summarised_data_as_df().to_dict(orient='records'))
