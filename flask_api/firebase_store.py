@@ -3,8 +3,9 @@ import logging
 from datetime import datetime
 from dotenv import load_dotenv
 import firebase_admin
-from firebase_admin import credentials, firestore
+from firebase_admin import auth, credentials, firestore
 import pandas as pd
+from flask import request, jsonify
 
 # Setup logging
 logging.basicConfig(level=logging.INFO, format='[%(asctime)s] %(levelname)s: %(message)s')
@@ -28,6 +29,18 @@ cred = credentials.Certificate(cred_path)
 firebase_admin.initialize_app(cred)
 db = firestore.client()
 logging.info("Initialized Firebase Admin SDK")
+
+def authenticate():
+    id_token = request.json.get('idToken')
+    try:
+        # Verify the ID token
+        decoded_token = auth.verify_id_token(id_token)
+        uid = decoded_token['uid']
+        email = decoded_token['email']
+        # Now, you can create a session or set a cookie as needed
+        return jsonify({"status": "success", "uid": uid, "email": email})
+    except Exception as e:
+        return jsonify({"status": "error", "message": str(e)}), 401
 
 def get_primary_id(source, identifier):
     logging.info(f"get_primary_id: source={source}, identifier={identifier}")

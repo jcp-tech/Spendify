@@ -1,11 +1,11 @@
 import os, logging, sys, json, base64
-from flask import Flask, request, jsonify, send_from_directory
+from flask import Flask, request, jsonify, send_from_directory, render_template, url_for
 from dotenv import load_dotenv
 from gcp_docai import extract_receipt_data
 from firebase_store import (
     get_primary_id, create_user,
     save_session_meta, save_raw_data, save_receipt_data, save_summarised_data,
-    get_all_summarised_data_as_df
+    authenticate, get_all_summarised_data_as_df
 )
 from io import BytesIO
 from PIL import Image
@@ -14,6 +14,9 @@ from datetime import datetime
 import calendar
 import pandas as pd
 
+code_dir = os.path.dirname(os.path.abspath(__file__))
+DASHBOARD_DIR = os.path.join(code_dir, "dashboard") # Directory to serve the dashboard HTML from
+
 # Load ENV
 load_dotenv()
 API_PORT = int(os.getenv('API_PORT', 8080))
@@ -21,10 +24,7 @@ CLASSIFICATION_URL = os.getenv('CLASSIFICATION_URL', 'http://localhost:8000')
 
 # Setup logging
 logging.basicConfig(level=logging.INFO, format='[%(asctime)s] %(levelname)s: %(message)s')
-app = Flask(__name__)
-
-# Directory to serve the dashboard HTML from
-DASHBOARD_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "dashboard")
+app = Flask(__name__, template_folder=DASHBOARD_DIR)
 
 def safe_sum(val1, val2):
     try:
@@ -32,13 +32,21 @@ def safe_sum(val1, val2):
     except Exception:
         return None
 
-
 # Route to serve the dashboard UI
 @app.route('/', methods=['GET'])
 def serve_dashboard():
     """Serve the dashboard HTML page"""
-    return send_from_directory(DASHBOARD_DIR, 'index.html')
+    # return send_from_directory(DASHBOARD_DIR, 'index.html')
+    return render_template('index.html') # return app.send_static_file('index.html')
 
+app.route('/authenticate', methods=['POST'])(authenticate)
+
+@app.route('/login', methods=['GET'])
+def login():
+    with open(os.path.join(code_dir, 'firebaseConfig.json'), 'r') as f:
+        firebaseConfig = json.load(f)
+    login_url = url_for('authenticate')  # This ensures correct URL building
+    return render_template('login.html', firebase_config=firebaseConfig, login_url=login_url)
 
 # Route providing aggregated summary for a specific user
 @app.route('/summary', methods=['GET'])

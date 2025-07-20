@@ -1,4 +1,3 @@
-
 google-cloud-documentai
 google-cloud-vision
 firebase-admin

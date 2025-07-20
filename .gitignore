@@ -11,3 +11,4 @@
 **/serviceAccountKey.json
 **/gcp_service_account.json
 **/firebase_credentials.json
+**/firebaseConfig.json
