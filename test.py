@@ -1,4 +1,4 @@
-from flask_api.gcp_adk_classification import ADKClient
+from .flask_api.gcp_adk_classification import ADKClient
 import json
 
 prompt_dict = {

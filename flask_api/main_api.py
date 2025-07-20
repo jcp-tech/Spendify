@@ -341,26 +341,26 @@ def get_data():
     logging.info(f"Returning summarised data for {len(df)} records")
     return jsonify(df.to_dict(orient='records'))
 
-# Simple chat endpoint using Gemini if available
-@app.route('/chat', methods=['POST'])
-def chat():
-    data = request.get_json() or {}
-    message = data.get('message', '')
-    if not message:
-        return jsonify({'error': 'No message provided'}), 400
-    reply = 'Hello! Ask me about your receipts.'
-    api_key = os.getenv('GEMINI_API_KEY')
-    if api_key:
-        try:
-            import google.generativeai as genai
-            genai.configure(api_key=api_key)
-            model = genai.GenerativeModel('gemini-pro')
-            resp = model.generate_content(message)
-            if resp.candidates:
-                reply = resp.candidates[0].content.parts[0].text.strip()
-        except Exception as e:
-            logging.error(f'Gemini API error: {e}')
-    return jsonify({'response': reply})
+# # Simple chat endpoint using Gemini if available
+# @app.route('/chat', methods=['POST'])
+# def chat():
+#     data = request.get_json() or {}
+#     message = data.get('message', '')
+#     if not message:
+#         return jsonify({'error': 'No message provided'}), 400
+#     reply = 'Hello! Ask me about your receipts.'
+#     api_key = os.getenv('GEMINI_API_KEY')
+#     if api_key:
+#         try:
+#             import google.generativeai as genai
+#             genai.configure(api_key=api_key)
+#             model = genai.GenerativeModel('gemini-pro')
+#             resp = model.generate_content(message)
+#             if resp.candidates:
+#                 reply = resp.candidates[0].content.parts[0].text.strip()
+#         except Exception as e:
+#             logging.error(f'Gemini API error: {e}')
+#     return jsonify({'response': reply})
 
 if __name__ == '__main__':
     # This will only run when called directly (for development/testing)
