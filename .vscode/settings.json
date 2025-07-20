@@ -1,9 +1,8 @@
 {
-    "python.defaultInterpreterPath": "${workspaceFolder}/.venv/Scripts/python.exe", // "python.defaultInterpreterPath": "${workspaceFolder}/.venv/bin/python",
+    // POWERSHELL SETTINGS
+    "python.defaultInterpreterPath": "${workspaceFolder}/.venv/bin/python", // "${workspaceFolder}/.venv/Scripts/python.exe",
     "python.terminal.activateEnvironment": true,
-    // "terminal.integrated.shellArgs.windows": [
-    //     // "/K", ".venv\\Scripts\\activate"
-    // ],
+    "terminal.integrated.defaultProfile.windows": "WSL", // "PowerShell",
     "terminal.integrated.profiles.windows": {
         "PowerShell": {
             "source": "PowerShell",
@@ -12,9 +11,11 @@
                 "-Command",
                 "& '${workspaceFolder}/.venv/Scripts/Activate.ps1'"
             ]
+        },
+        "WSL": {
+            "path": "wsl.exe"
         }
     },
-    "terminal.integrated.defaultProfile.windows": "PowerShell",
     "IDX.aI.enableInlineCompletion": true,
     "IDX.aI.enableCodebaseIndexing": true
 }
