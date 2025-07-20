@@ -16,7 +16,7 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-API_BASE = os.getenv('API_URL', 'http://127.0.0.1:8000')
+API_BASE = os.getenv('API_URL', 'http://127.0.0.1:8080')
 SOURCE = 'TKINTER'
 
 # Identifier for this source (e.g., your configured TKINTER_ID in .env)
@@ -72,23 +72,19 @@ def get_user_data(primary_id):
 
 def ensure_authenticated(primary, session_id):
     """Ensure the user has completed OAuth login."""
-    try:
-        user_doc = get_user_data(primary)
-        if user_doc:
-            if 'auth' in user_doc:
-                return True
-            session_id = user_doc.get('session_id', session_id)
-    except Exception:
-        pass
-    login_link = f"{API_BASE}/login/TRUE/{session_id}"
-    print(f"Please complete OAuth login: {login_link}")
-    input("Press Enter once logged in...")
-    try:
-        r = get_user_data(primary)
-        return r and 'auth' in r
-    except Exception:
-        return False
-
+    while True:
+        try:
+            user_doc = get_user_data(primary)
+            # print(f"User document for {primary}: {user_doc}")
+            if user_doc:
+                if 'auth' in user_doc:
+                    return True
+                session_id = user_doc.get('session_id', session_id)
+        except Exception:
+            pass
+        login_link = f"{API_BASE}/login/TRUE/{session_id}"
+        print(f"Please complete OAuth login: {login_link}")
+        input("Press Enter once logged in...")
 
 def select_and_send():
     primary, session_id = ensure_registration()

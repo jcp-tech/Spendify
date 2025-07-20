@@ -108,7 +108,10 @@ def get_user_document(primary_id):
     logging.info(f"get_user_document: {primary_id}")
     doc_ref = db.collection('USERDATA').document(primary_id)
     doc = doc_ref.get()
-    return doc.to_dict() if doc.exists else None
+    doc_dict = doc.to_dict() if doc.exists else None
+    if 'decoded_token' in doc_dict:
+        del doc_dict['decoded_token'] # Remove the decoded_token field to avoid sending sensitive data
+    return doc_dict
 
 def save_session_meta(session_id, timestamp, main_user, source):
     logging.info(f"save_session_meta: session_id={session_id}, main_user={main_user}, source={source}, timestamp={timestamp}")
