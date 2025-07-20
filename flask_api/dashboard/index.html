@@ -41,6 +41,49 @@
       background:#fff; padding:30px; border-radius:12px; box-shadow:0 6px 10px rgba(0,0,0,0.15); width:340px; text-align:center;
     }
     #loginBox button { width:100%; background:#6246ea; color:#fff; border:none; padding:12px; border-radius:8px; cursor:pointer; }
+    
+    /* Loading Layer Styles */
+    #loadingLayer {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(249, 249, 252, 0.9);
+      display: none;
+      justify-content: center;
+      align-items: center;
+      z-index: 1000;
+    }
+    
+    .loading-content {
+      text-align: center;
+      background: white;
+      padding: 2rem;
+      border-radius: 12px;
+      box-shadow: 0 6px 20px rgba(0,0,0,0.1);
+    }
+    
+    .spinner {
+      width: 50px;
+      height: 50px;
+      border: 4px solid #f3f3f3;
+      border-top: 4px solid #6246ea;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+      margin: 0 auto 1rem;
+    }
+    
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+    
+    .loading-text {
+      color: #6246ea;
+      font-weight: 600;
+      margin: 0;
+    }
   </style>
 </head>
 <body>
@@ -48,6 +91,14 @@
     <div id="loginBox">
       <h2>Login</h2>
       <button id="googleLoginBtn">Sign in with Google</button>
+    </div>
+  </div>
+
+  <!-- Loading Layer -->
+  <div id="loadingLayer">
+    <div class="loading-content">
+      <div class="spinner"></div>
+      <p class="loading-text">Loading your dashboard...</p>
     </div>
   </div>
 
@@ -114,35 +165,49 @@
 
     const loginContainer = document.getElementById('loginContainer');
     const dashboard = document.getElementById('dashboard');
+    const loadingLayer = document.getElementById('loadingLayer');
     const googleBtn = document.getElementById('googleLoginBtn');
     const usernameEl = document.getElementById('username');
     const logoutBtn = document.getElementById('logoutBtn');
 
     async function fetchSummary(id) {
-      const res = await fetch(`/summary?user_id=${id}`);
-      if (!res.ok) return false;
-      const data = await res.json();
-      document.getElementById('totalSpend').textContent = `$${data.total_monthly_spend.toFixed(2)}`;
-      document.getElementById('avgDailySpend').textContent = `$${data.average_daily_spend.toFixed(2)}`;
-      document.getElementById('topCategory').textContent = `${data.top_category} ($${data.top_category_total.toFixed(2)})`;
+      // Show loading layer
+      loadingLayer.style.display = 'flex';
+      
+      try {
+        const res = await fetch(`/summary?user_id=${id}`);
+        if (!res.ok) return false;
+        const data = await res.json();
+        document.getElementById('totalSpend').textContent = `$${data.total_monthly_spend.toFixed(2)}`;
+        document.getElementById('avgDailySpend').textContent = `$${data.average_daily_spend.toFixed(2)}`;
+        document.getElementById('topCategory').textContent = `${data.top_category} ($${data.top_category_total.toFixed(2)})`;
 
-      new Chart(document.getElementById('categoryChart'), {
-        type: 'doughnut',
-        data: {
-          labels: data.expense_by_category.labels,
-          datasets: [{ data: data.expense_by_category.values, backgroundColor: ['#f87171','#fbbf24','#34d399','#60a5fa','#c084fc'] }]
-        },
-        options: { plugins: { legend: { position: 'bottom' } } }
-      });
+        new Chart(document.getElementById('categoryChart'), {
+          type: 'doughnut',
+          data: {
+            labels: data.expense_by_category.labels,
+            datasets: [{ data: data.expense_by_category.values, backgroundColor: ['#f87171','#fbbf24','#34d399','#60a5fa','#c084fc'] }]
+          },
+          options: { plugins: { legend: { position: 'bottom' } } }
+        });
 
-      new Chart(document.getElementById('weeklyChart'), {
-        type: 'bar',
-        data: {
-          labels: data.weekly_spending.labels,
-          datasets: [{ label: 'Amount Spent', data: data.weekly_spending.values, backgroundColor: '#8b5cf6' }]
-        }
-      });
-      return true;
+        new Chart(document.getElementById('weeklyChart'), {
+          type: 'bar',
+          data: {
+            labels: data.weekly_spending.labels,
+            datasets: [{ label: 'Amount Spent', data: data.weekly_spending.values, backgroundColor: '#8b5cf6' }]
+          }
+        });
+        
+        // Hide loading layer after data is loaded
+        loadingLayer.style.display = 'none';
+        return true;
+      } catch (error) {
+        console.error('Error fetching summary:', error);
+        // Hide loading layer even on error
+        loadingLayer.style.display = 'none';
+        return false;
+      }
     }
 
     async function handleGoogleLogin() {
