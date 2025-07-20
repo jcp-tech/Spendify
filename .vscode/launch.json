@@ -7,8 +7,8 @@
             "request": "launch",
             "program": "${workspaceFolder}/main_api.py",
             "console": "integratedTerminal",
-            // "python": "${workspaceFolder}/.venv/bin/python", // Use .venv Python interpreter
-            "python": "${workspaceFolder}/.venv/Scripts/python.exe", // Use .venv Python interpreter
+            "python": "${workspaceFolder}/venv-windows/Scripts/python.exe", // Windows
+            // "python": "${workspaceFolder}/venv-linux/bin/python", // Linux
             "env": {
                 // Add any environment variables needed for the API here
                 // e.g., "API_PORT": "8000"
@@ -20,8 +20,8 @@
             "request": "launch",
             "program": "${workspaceFolder}/bot.py",
             "console": "integratedTerminal",
-            // "python": "${workspaceFolder}/.venv/bin/python", // Use .venv Python interpreter
-            "python": "${workspaceFolder}/.venv/Scripts/python.exe", // Use .venv Python interpreter
+            "python": "${workspaceFolder}/venv-windows/Scripts/python.exe", // Windows
+            // "python": "${workspaceFolder}/venv-linux/bin/python", // Linux
             "env": {
                 // Add any environment variables needed for the Bot here
                 // e.g., "DISCORD_TOKEN": "your_token_here"

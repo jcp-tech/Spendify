@@ -1,12 +1,13 @@
-**/.env
-**/serviceAccountKey.json
-**/*ignore*/
-# **/*.keras
 **/*__pycache__*/
+**/.env
+/flask_api/templates
+**/*ignore*/
 **/img_content
 **/uploads
-/.venv # /MapleMasala
+/venv-linux
+/venv-windows
 /ignore-notes.md
+# **/*.keras
+**/serviceAccountKey.json
 **/gcp_service_account.json
 **/firebase_credentials.json
-/flask_api/templates
