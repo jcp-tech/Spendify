@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Upload Receipt - Spendify</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    body { font-family: 'Segoe UI', sans-serif; margin: 0; background: #f9f9fc; }
+    .sidebar {
+      width: 220px; background: #fff; height: 100vh; position: fixed;
+      border-right: 1px solid #e0e0e0; padding: 1rem;
+    }
+    .sidebar h2 { color: #6246ea; margin-bottom: 2rem; }
+    .sidebar nav a {
+      display: block; padding: 10px; text-decoration: none; color: #333;
+      border-radius: 5px; margin-bottom: 0.5rem;
+    }
+    .sidebar nav a:hover { background: #f0f0f0; }
+    .main { margin-left: 240px; padding: 2rem; }
+    .header { margin-bottom: 2rem; display:flex; justify-content:space-between; align-items:center; }
+    #loginContainer { display:none; height:100vh; display:flex; justify-content:center; align-items:center; }
+    #loginBox {
+      background:#fff; padding:30px; border-radius:12px; box-shadow:0 6px 10px rgba(0,0,0,0.15); width:340px; text-align:center;
+    }
+    #loginBox button { width:100%; background:#6246ea; color:#fff; border:none; padding:12px; border-radius:8px; cursor:pointer; }
+  </style>
+</head>
+<body>
+  <div id="loginContainer">
+    <div id="loginBox">
+      <h2>Login</h2>
+      <button id="googleLoginBtn">Sign in with Google</button>
+    </div>
+  </div>
+
+  <div id="dashboard" style="display:none;">
+    <div class="sidebar">
+      <h2>Spendify</h2>
+      <nav>
+        <a href="/">🏠 Dashboard</a>
+        <a href="/upload_page">📤 Upload Receipt</a>
+        <a href="/chat_page">💬 Chat with Bot</a>
+      </nav>
+    </div>
+
+    <div class="main">
+      <div class="header">
+        <div>
+          <h1>Upload Receipt</h1>
+          <p>Select an image to process</p>
+        </div>
+        <button id="logoutBtn" style="background:#e53e3e;color:#fff;border:none;padding:8px 16px;border-radius:6px;cursor:pointer;">Logout</button>
+      </div>
+      <input type="file" id="receiptFile" accept="image/*" />
+      <button id="uploadBtn" style="margin-left:1rem;">Upload</button>
+      <p id="uploadResult"></p>
+    </div>
+  </div>
+
+  <script type="module">
+    import { initializeApp } from 'https://www.gstatic.com/firebasejs/12.0.0/firebase-app.js';
+    import { getAuth, GoogleAuthProvider, signInWithPopup, signOut } from 'https://www.gstatic.com/firebasejs/12.0.0/firebase-auth.js';
+
+    const firebaseConfig = {{ firebase_config | tojson }};
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+
+    const loginContainer = document.getElementById('loginContainer');
+    const dashboard = document.getElementById('dashboard');
+    const googleBtn = document.getElementById('googleLoginBtn');
+    const logoutBtn = document.getElementById('logoutBtn');
+
+    async function handleGoogleLogin() {
+      const provider = new GoogleAuthProvider();
+      const result = await signInWithPopup(auth, provider);
+      const idToken = await result.user.getIdToken();
+      const resp = await fetch('/login_check', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({ idToken })
+      });
+      const data = await resp.json();
+      if (data.status === 'existing') {
+        localStorage.setItem('primary_id', data.primary_id);
+        showDashboard();
+      } else if (data.status === 'new') {
+        window.location.href = '/register_user';
+      } else {
+        alert('Login failed');
+      }
+    }
+
+    function showDashboard() {
+      loginContainer.style.display = 'none';
+      dashboard.style.display = 'block';
+    }
+
+    googleBtn.onclick = handleGoogleLogin;
+    logoutBtn.onclick = async () => {
+      await signOut(auth);
+      localStorage.removeItem('primary_id');
+      location.reload();
+    };
+
+    window.addEventListener('load', async () => {
+      const stored = localStorage.getItem('primary_id');
+      if (stored) {
+        const res = await fetch(`/get_user?primary_id=${stored}`);
+        if (res.ok) {
+          const doc = await res.json();
+          if (doc.auth) { showDashboard(); return; }
+        }
+      }
+      loginContainer.style.display = 'flex';
+    });
+
+    document.getElementById('uploadBtn').onclick = async () => {
+      const fileInput = document.getElementById('receiptFile');
+      if (!fileInput.files.length) { alert('Select a file'); return; }
+      const primary = localStorage.getItem('primary_id');
+      if (!primary) { alert('Not logged in'); return; }
+      const form = new FormData();
+      form.append('file', fileInput.files[0]);
+      form.append('session_id', crypto.randomUUID());
+      form.append('identifier', primary);
+      form.append('source', 'WEB');
+      form.append('timestamp', new Date().toISOString());
+      const resp = await fetch('/upload', { method:'POST', body:form });
+      const data = await resp.json();
+      if (resp.ok) {
+        document.getElementById('uploadResult').textContent = 'Upload successful!';
+      } else {
+        document.getElementById('uploadResult').textContent = data.error || 'Upload failed';
+      }
+    };
+  </script>
+</body>
+</html>

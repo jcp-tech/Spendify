@@ -67,6 +67,20 @@ def register_user_page():
         firebase_config = json.load(f)
     return render_template('register.html', firebase_config=firebase_config)
 
+# Serve page for uploading receipts via the web dashboard
+@app.route('/upload_page', methods=['GET'])
+def upload_page():
+    with open(os.path.join(code_dir, 'firebaseConfig.json'), 'r') as f:
+        firebase_config = json.load(f)
+    return render_template('upload.html', firebase_config=firebase_config)
+
+# Serve simple chat interface
+@app.route('/chat_page', methods=['GET'])
+def chat_page():
+    with open(os.path.join(code_dir, 'firebaseConfig.json'), 'r') as f:
+        firebase_config = json.load(f)
+    return render_template('chat.html', firebase_config=firebase_config)
+
 # Route providing aggregated summary for a specific user
 @app.route('/summary', methods=['GET'])
 def summary():
@@ -326,6 +340,27 @@ def get_data():
         return jsonify({'error': 'No data found'}), 404
     logging.info(f"Returning summarised data for {len(df)} records")
     return jsonify(df.to_dict(orient='records'))
+
+# Simple chat endpoint using Gemini if available
+@app.route('/chat', methods=['POST'])
+def chat():
+    data = request.get_json() or {}
+    message = data.get('message', '')
+    if not message:
+        return jsonify({'error': 'No message provided'}), 400
+    reply = 'Hello! Ask me about your receipts.'
+    api_key = os.getenv('GEMINI_API_KEY')
+    if api_key:
+        try:
+            import google.generativeai as genai
+            genai.configure(api_key=api_key)
+            model = genai.GenerativeModel('gemini-pro')
+            resp = model.generate_content(message)
+            if resp.candidates:
+                reply = resp.candidates[0].content.parts[0].text.strip()
+        except Exception as e:
+            logging.error(f'Gemini API error: {e}')
+    return jsonify({'response': reply})
 
 if __name__ == '__main__':
     # This will only run when called directly (for development/testing)
