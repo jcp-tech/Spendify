@@ -36,9 +36,10 @@ def safe_sum(val1, val2):
 # Route to serve the dashboard UI
 @app.route('/', methods=['GET'])
 def serve_dashboard():
-    """Serve the dashboard HTML page"""
-    # return send_from_directory(DASHBOARD_DIR, 'index.html')
-    return render_template('index.html') # return app.send_static_file('index.html')
+    """Serve the dashboard HTML page with Firebase config"""
+    with open(os.path.join(code_dir, 'firebaseConfig.json'), 'r') as f:
+        firebase_config = json.load(f)
+    return render_template('index.html', firebase_config=firebase_config)
 
 app.route('/authenticate/<main_source>/<session_id>', methods=['POST'])(authenticate)
 app.route('/authenticate/<main_source>/<session_id>/', methods=['POST'])(authenticate)
@@ -58,10 +59,23 @@ def login(main_source, session_id):
     login_url = url_for('authenticate', session_id=session_id, main_source=main_source)
     return render_template('login.html', firebase_config=firebaseConfig, login_url=login_url, session_id=session_id, main_source=main_source)
 
+@app.route('/register_user', methods=['GET'])
+def register_user_page():
+    """Serve the registration page for new users"""
+    with open(os.path.join(code_dir, 'firebaseConfig.json'), 'r') as f:
+        firebase_config = json.load(f)
+    return render_template('register.html', firebase_config=firebase_config)
+
 # Route providing aggregated summary for a specific user
 @app.route('/summary', methods=['GET'])
 def summary():
-    user_id = request.args.get('user_id', 'jojo')
+    user_id = request.args.get('user_id')
+    if not user_id:
+        return jsonify({'error': 'Missing user_id'}), 400
+    user_doc = get_user_document(user_id)
+    if not user_doc or 'auth' not in user_doc:
+        return jsonify({'error': 'Unauthorized'}), 401
+
     df = get_all_summarised_data_as_df(USERNAME=user_id)
     if df.empty:
         return jsonify({'error': 'No data found'}), 404

@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Register</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f4f7fa;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            margin: 0;
+        }
+        .container {
+            background-color: #ffffff;
+            border-radius: 12px;
+            box-shadow: 0 6px 10px rgba(0,0,0,0.15);
+            padding: 40px;
+            text-align: center;
+            width: 350px;
+        }
+        input {
+            padding: 10px;
+            width: 100%;
+            margin-bottom: 15px;
+            border: 1px solid #ccc;
+            border-radius: 6px;
+        }
+        button {
+            background-color: #4285f4;
+            color: #ffffff;
+            border: none;
+            border-radius: 8px;
+            padding: 12px 24px;
+            font-size: 16px;
+            cursor: pointer;
+            width: 100%;
+        }
+        button:hover {
+            background-color: #357ae8;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2>Create Your Account</h2>
+        <input type="text" id="primaryId" placeholder="Choose a Primary ID" />
+        <button id="registerBtn">Register &amp; Sign In with Google</button>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/12.0.0/firebase-app.js";
+        import { getAuth, GoogleAuthProvider, signInWithPopup } from "https://www.gstatic.com/firebasejs/12.0.0/firebase-auth.js";
+
+        const firebaseConfig = {{ firebase_config | tojson }};
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+
+        document.getElementById('registerBtn').onclick = async () => {
+            const primary = document.getElementById('primaryId').value.trim();
+            if (!primary) { alert('Enter a primary ID'); return; }
+            try {
+                const resp = await fetch('/register', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ source: 'WEB', identifier: primary, primary_id: primary })
+                });
+                if (!resp.ok) { throw new Error('Registration failed'); }
+                const data = await resp.json();
+                const sessionId = data.session_id;
+                const provider = new GoogleAuthProvider();
+                const result = await signInWithPopup(auth, provider);
+                const idToken = await result.user.getIdToken();
+                await fetch(`/authenticate/FALSE/${sessionId}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ idToken })
+                });
+                localStorage.setItem('primary_id', primary);
+                window.location.href = '/';
+            } catch (err) {
+                alert(err.message);
+            }
+        };
+    </script>
+</body>
+</html>
