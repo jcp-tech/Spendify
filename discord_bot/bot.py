@@ -242,6 +242,13 @@ async def manual_register(ctx):
     # 2. Existing user already authenticated
     # No additional messaging needed here
 
+@bot.command(name='home') # @bot.command(name='dashboard')
+async def dashboard_command(ctx):
+    """Provide users with the dashboard link."""
+    primary = await ensure_registered(ctx)
+    dashboard_link = f"{API_BASE}"
+    await ctx.channel.send(f"🎛️ **Spendify Dashboard**\n\n[Access Your Dashboard]({dashboard_link})\n\nView your receipts, expenses, and analytics here!)")
+
 async def process_upload(session_id, file_path, identifier, primary, source, timestamp):
     """
     Background upload to API.
