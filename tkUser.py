@@ -60,12 +60,22 @@ def ensure_registration():
             print("Registration failed:", r2.text)
     return None, None
 
+def get_user_data(primary_id):
+    """Fetch user data from the API for a given primary_id."""
+    try:
+        r = requests.get(f"{API_BASE}/get_user", params={'primary_id': primary_id})
+        if r.ok:
+            return r.json()
+    except Exception:
+        pass
+    return None
+
 def ensure_authenticated(primary, session_id):
     """Ensure the user has completed OAuth login."""
     try:
-        r = requests.get(f"{API_BASE}/get_user", params={'primary_id': primary})
-        if r.ok:
-            user_doc = r.json()
+        user_doc = get_user_data(primary)
+        if user_doc:
+            if 'auth' in user_doc:
             if 'auth' in user_doc:
                 return True
             session_id = user_doc.get('session_id', session_id)
