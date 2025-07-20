@@ -1,9 +1,10 @@
 import os
 import logging
 from datetime import datetime
+import uuid
 from dotenv import load_dotenv
 import firebase_admin
-from firebase_admin import auth, credentials, firestore
+from firebase_admin import auth, credentials, firestore # , realtime
 import pandas as pd
 from flask import request, jsonify
 
@@ -30,15 +31,68 @@ firebase_admin.initialize_app(cred)
 db = firestore.client()
 logging.info("Initialized Firebase Admin SDK")
 
-def authenticate():
+
+def create_user(primary_id, source, identifier, session_id=None):
+    logging.info(f"create_user: primary_id={primary_id}, source={source}, identifier={identifier}")
+    user_ref = db.collection('USERDATA').document(primary_id)
+    # Check for session_id in existing user
+    if session_id is None:
+        if user_ref.get().to_dict() is not None:
+            if 'session_id' in user_ref.get().to_dict():
+                session_id = user_ref.get().to_dict()['session_id']
+                logging.info(f"Using existing session_id={session_id} for primary_id={primary_id}")
+            else:
+                session_id = str(uuid.uuid4())
+        else:
+            session_id = str(uuid.uuid4())
+    user_ref.set({
+        source: identifier,
+        'session_id': session_id,
+    }, merge=True)
+    logging.info("User record created/merged")
+    return session_id
+
+def authenticate(main_source, session_id):
+    # Search if any db.collection('USERDATA').document(primary_id) has this session_id and return the primary_id
+    primary_id = db.collection('USERDATA').where('session_id', '==', session_id).limit(1).get()[0].id
+    # main_source can be 'TRUE' or 'FALSE' | it refers to wheter the source of the request is main (api) or not (e.g. web dashboard)
     id_token = request.json.get('idToken')
+    # is_new_user = request.json.get('isNewUser')  # <--- NEW
     try:
-        # Verify the ID token
-        decoded_token = auth.verify_id_token(id_token)
-        uid = decoded_token['uid']
-        email = decoded_token['email']
-        # Now, you can create a session or set a cookie as needed
-        return jsonify({"status": "success", "uid": uid, "email": email})
+        decoded_token = auth.verify_id_token(id_token) # Verify the ID token
+        create_user(primary_id, 'auth', decoded_token['uid'], session_id)
+        """
+            {
+                'name': 'User\'s display name',
+                'picture': 'URL to user\'s profile picture',
+                'iss': 'Issuer of the token',
+                'aud': 'Audience (project ID)',
+                'auth_time': 'Authentication time (Unix timestamp)',
+                'user_id': 'Firebase user ID',
+                'sub': 'Subject (user ID)',
+                'iat': 'Issued at (Unix timestamp)',
+                'exp': 'Expiration time (Unix timestamp)',
+                'email': 'User\'s email address',
+                'email_verified': 'Whether email is verified (bool)',
+                'firebase': {
+                'identities': {
+                    'google.com': 'List of Google account IDs',
+                    'email': 'List of email addresses'
+                },
+                'sign_in_provider': 'Sign-in provider (e.g., google.com)'
+                },
+                'uid': 'Firebase user ID'
+            }
+        """
+        # decoded_token = dict(decoded_token)  # Convert to dict for easier access
+        decoded_token['decoded_token'] = id_token  # Store the original ID token
+        create_user(primary_id, 'decoded_token', dict(decoded_token), session_id)
+        return jsonify({
+            "status": "success",
+            # "uid": decoded_token['uid'],
+            # "email": decoded_token['email'],
+            # "session_id": session_id
+        }), 200
     except Exception as e:
         return jsonify({"status": "error", "message": str(e)}), 401
 
@@ -48,12 +102,6 @@ def get_primary_id(source, identifier):
     primary = docs[0].id if docs else None
     logging.info(f"Found primary_id={primary}" if primary else "No primary_id found")
     return primary
-
-def create_user(primary_id, source, identifier):
-    logging.info(f"create_user: primary_id={primary_id}, source={source}, identifier={identifier}")
-    user_ref = db.collection('USERDATA').document(primary_id)
-    user_ref.set({source: identifier}, merge=True)
-    logging.info("User record created/merged")
 
 def save_session_meta(session_id, timestamp, main_user, source):
     logging.info(f"save_session_meta: session_id={session_id}, main_user={main_user}, source={source}, timestamp={timestamp}")

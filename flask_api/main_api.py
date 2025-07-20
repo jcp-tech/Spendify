@@ -1,4 +1,5 @@
 import os, logging, sys, json, base64
+import uuid
 from flask import Flask, request, jsonify, send_from_directory, render_template, url_for
 from dotenv import load_dotenv
 from gcp_docai import extract_receipt_data
@@ -39,14 +40,23 @@ def serve_dashboard():
     # return send_from_directory(DASHBOARD_DIR, 'index.html')
     return render_template('index.html') # return app.send_static_file('index.html')
 
-app.route('/authenticate', methods=['POST'])(authenticate)
+app.route('/authenticate/<main_source>/<session_id>', methods=['POST'])(authenticate)
+app.route('/authenticate/<main_source>/<session_id>/', methods=['POST'])(authenticate)
 
-@app.route('/login', methods=['GET'])
-def login():
+@app.route('/login', defaults={'main_source': 'FALSE', 'session_id': None}, methods=['GET'])
+@app.route('/login/', defaults={'main_source': 'FALSE', 'session_id': None}, methods=['GET'])
+@app.route('/login/<main_source>/<session_id>', methods=['GET'])
+@app.route('/login/<main_source>/<session_id>/', methods=['GET'])
+def login(main_source, session_id):
+    # main_source can be 'TRUE' or 'FALSE' | it refers to wheter the source of the request is main (api) or not (e.g. web dashboard)
     with open(os.path.join(code_dir, 'firebaseConfig.json'), 'r') as f:
         firebaseConfig = json.load(f)
-    login_url = url_for('authenticate')  # This ensures correct URL building
-    return render_template('login.html', firebase_config=firebaseConfig, login_url=login_url)
+    if main_source != 'TRUE':
+        main_source = 'FALSE'
+    if not session_id:
+        session_id = str(uuid.uuid4())
+    login_url = url_for('authenticate', session_id=session_id, main_source=main_source)
+    return render_template('login.html', firebase_config=firebaseConfig, login_url=login_url, session_id=session_id, main_source=main_source)
 
 # Route providing aggregated summary for a specific user
 @app.route('/summary', methods=['GET'])
@@ -105,14 +115,16 @@ def health_check():
 def register():
     payload = request.get_json() or {}
     source = payload.get('source')
+    if source in ['auth', 'decoded_token']:
+        return jsonify({'error': 'Invalid source for registration'}), 400
     identifier = payload.get('identifier')
     primary_id = payload.get('primary_id') or identifier
     logging.info(f"Register request: source={source}, identifier={identifier}, primary_id={primary_id}")
     if not source or not identifier:
         return jsonify({'error': 'Missing source or identifier'}), 400
-    create_user(primary_id, source, identifier)
+    session_id = create_user(primary_id, source, identifier)
     logging.info(f"User created/updated: {primary_id} -> {source}:{identifier}")
-    return jsonify({'status': 'registered', 'primary_id': primary_id}), 200
+    return jsonify({'status': 'registered', 'primary_id': primary_id, 'session_id': session_id}), 200
 
 @app.route('/get_primary', methods=['GET'])
 def get_primary():

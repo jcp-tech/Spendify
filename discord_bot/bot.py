@@ -12,6 +12,7 @@ load_dotenv()
 DISCORD_TOKEN = os.getenv('DISCORD_TOKEN')
 API_BASE = os.getenv('API_URL', 'http://127.0.0.1:5000')
 OPTIMISE = os.getenv('OPTIMISE', 'True') # This isnt used anymore.
+COMMAND_PREFIX = os.getenv('DISCORD_COMMAND_PREFIX', '!')
 
 intents = discord.Intents.default()
 intents.message_content = True
@@ -19,16 +20,12 @@ intents.messages = True
 intents.guilds = True
 intents.members = True
 
-bot = commands.Bot(command_prefix='!', intents=intents)
+bot = commands.Bot(command_prefix=COMMAND_PREFIX, intents=intents)
 
 async def ensure_registered(ctx):
-    """
-    Check with API if user is registered.
-    If not, interactively register them.
-    Return primary_id or None.
-    """
     identifier = ctx.author.name
-    # Quick check
+
+    # Check if user exists
     try:
         r = requests.get(f"{API_BASE}/get_primary", params={
             'source': 'DISCORD',
@@ -37,25 +34,24 @@ async def ensure_registered(ctx):
         if r.status_code == 200:
             return r.json().get('primary_id')
     except:
-        await ctx.channel.send("❗ Registration check failed. Try again later.")
-        return None
+        await ctx.channel.send("❗ Registration check failed.")
 
-    # Not registered: prompt user
+    # If not registered
     await ctx.channel.send("You are not registered. Would you like to register now? (yes/no)")
+
     def check(m):
         return m.author == ctx.author and m.channel == ctx.channel
 
     try:
         msg = await bot.wait_for('message', check=check, timeout=60)
+        if not msg.content.lower().startswith('y'):
+            await ctx.channel.send("Cannot process without registration. Please register later.")
+            return None
     except asyncio.TimeoutError:
         await ctx.channel.send("⏰ Registration timed out.")
         return None
 
-    if not msg.content.lower().startswith('y'):
-        await ctx.channel.send("Cannot process without registration. Please register later.")
-        return None
-
-    # Ask for primary ID
+    # Choose primary ID
     await ctx.channel.send("Use your Discord username as primary ID? (yes/no)")
     try:
         opt = await bot.wait_for('message', check=check, timeout=60)
@@ -82,7 +78,16 @@ async def ensure_registered(ctx):
             'primary_id': primary
         })
         resp.raise_for_status()
-        await ctx.channel.send(f"✅ Registered under ID: `{primary}`")
+        # Get the response (session_id)
+        data = resp.json()
+        session_id = data.get('session_id')
+        # Send login link via DM
+        login_link = f"{API_BASE}/login/TRUE/{session_id}"
+        try:
+            await ctx.author.send(f"✅ You are registered under ID: `{primary}`.\nPlease [Login Here]({login_link}) to Complete Registration.")
+            await ctx.channel.send("✅ Registered Almost Complete, Please check your DM for the login link...")
+        except discord.Forbidden:
+            await ctx.channel.send("❌ Cannot DM you. Please check your privacy settings.")
         return primary
     except Exception as e:
         await ctx.channel.send(f"❌ Registration failed: {e}")

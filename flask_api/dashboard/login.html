@@ -1,12 +1,79 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <title>Google Sign-In with Firebase (to Flask)</title>
-    <!-- <script src="https://www.gstatic.com/firebasejs/12.0.0/firebase-app.js"></script> -->
-    <!-- <script src="https://www.gstatic.com/firebasejs/12.0.0/firebase-auth.js"></script> -->
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sign in with Google</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f4f7fa;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            margin: 0;
+        }
+
+        .container {
+            background-color: #ffffff;
+            border-radius: 12px;
+            box-shadow: 0 6px 10px rgba(0,0,0,0.15);
+            padding: 40px;
+            text-align: center;
+            width: 350px;
+        }
+
+        h2 {
+            color: #333;
+            margin-bottom: 20px;
+        }
+
+        button {
+            background-color: #4285f4;
+            color: #ffffff;
+            border: none;
+            border-radius: 8px;
+            padding: 12px 24px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 100%;
+        }
+
+        button:hover {
+            background-color: #357ae8;
+        }
+
+        button i {
+            margin-right: 8px;
+        }
+
+        .footer-text {
+            color: #888;
+            font-size: 14px;
+            margin-top: 20px;
+        }
+
+    </style>
+    <!--
+        <script src="https://www.gstatic.com/firebasejs/12.0.0/firebase-app.js"></script>
+        <script src="https://www.gstatic.com/firebasejs/12.0.0/firebase-auth.js"></script>
+    -->
 </head>
 <body>
-    <button id="googleSignInBtn">Sign in with Google</button>
+    <div class="container">
+        <h2>Welcome Back!</h2>
+        <button id="googleSignInBtn">
+            <i class="fab fa-google"></i>
+            Sign in with Google
+        </button>
+        <p class="footer-text">Secure & quick sign-in</p>
+    </div>
     <!-- <button onclick="googleSignIn()">Sign in with Google</button> -->
     <div id="result"></div>
     <script type="module">
@@ -16,6 +83,7 @@
         
         const firebaseConfig = {{ firebase_config | tojson }};
         const LOGIN_URL = "{{ login_url }}";  // This will be '/login'
+        const main_source = "{{ main_source }}";  // This will be 'TRUE' or 'FALSE'
 
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
@@ -24,18 +92,27 @@
         async function googleSignIn() {
             const provider = new GoogleAuthProvider();
             try {
-            const result = await signInWithPopup(auth, provider);
-            const idToken = await result.user.getIdToken();
-            // Use the passed login URL here!
-            const resp = await fetch(LOGIN_URL, {
-                method: 'POST',
-                headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({ idToken })
-            });
-            const data = await resp.json();
-            document.getElementById('result').innerText = JSON.stringify(data, null, 2);
+                const result = await signInWithPopup(auth, provider);
+                const idToken = await result.user.getIdToken();
+                // const isNewUser = result.additionalUserInfo.isNewUser; // <--- NEW
+
+                // Use the passed login URL here!
+                const resp = await fetch(LOGIN_URL, {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ idToken }) // , isNewUser
+                });
+                const data = await resp.json();
+                // document.getElementById('result').innerText = JSON.stringify(data, null, 2);
+                if (main_source === 'TRUE') {
+                    document.getElementById('result').innerText = "Login successful you can close this window now.";
+                    window.close(); // or redirect to another page
+                } else {
+                    document.getElementById('result').innerText = "Login successful";
+                    // NOTE-TODO: add a redirect to Home Page.
+                }
             } catch (err) {
-            document.getElementById('result').innerText = "Error: " + err.message;
+                document.getElementById('result').innerText = "Error: " + err.message;
             }
         }
         document.getElementById('googleSignInBtn').onclick = googleSignIn;
