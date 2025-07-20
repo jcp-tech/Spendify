@@ -97,6 +97,28 @@ def authenticate(main_source, session_id):
     except Exception as e:
         return jsonify({"status": "error", "message": str(e)}), 401
 
+def login_check():
+    """Verify Google ID token and check if a corresponding user exists."""
+    id_token = request.json.get('idToken')
+    try:
+        decoded_token = auth.verify_id_token(id_token)
+        uid = decoded_token['uid']
+        docs = db.collection('USERDATA').where('auth', '==', uid).limit(1).get()
+        if docs:
+            primary_id = docs[0].id
+            session_id = create_user(primary_id, 'auth', uid)
+            create_user(primary_id, 'decoded_token', dict(decoded_token), session_id)
+            return jsonify({
+                'status': 'existing',
+                'primary_id': primary_id,
+                'session_id': session_id
+            }), 200
+        else:
+            return jsonify({'status': 'new'}), 200
+    except Exception as e:
+        logging.exception('Login check failed')
+        return jsonify({'status': 'error', 'message': str(e)}), 401
+
 def get_primary_id(source, identifier):
     logging.info(f"get_primary_id: source={source}, identifier={identifier}")
     docs = db.collection('USERDATA').where(source, '==', identifier).limit(1).get()
