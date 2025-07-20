@@ -6,7 +6,7 @@ from gcp_docai import extract_receipt_data
 from firebase_store import (
     get_primary_id, create_user,
     save_session_meta, save_raw_data, save_receipt_data, save_summarised_data,
-    authenticate, get_all_summarised_data_as_df, get_user_document
+    authenticate, login_check, get_all_summarised_data_as_df, get_user_document
 )
 from io import BytesIO
 from PIL import Image
@@ -43,6 +43,7 @@ def serve_dashboard():
 
 app.route('/authenticate/<main_source>/<session_id>', methods=['POST'])(authenticate)
 app.route('/authenticate/<main_source>/<session_id>/', methods=['POST'])(authenticate)
+app.route('/login_check', methods=['POST'])(login_check)
 
 @app.route('/login', defaults={'main_source': 'FALSE', 'session_id': None}, methods=['GET'])
 @app.route('/login/', defaults={'main_source': 'FALSE', 'session_id': None}, methods=['GET'])
