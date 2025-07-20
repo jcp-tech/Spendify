@@ -93,6 +93,30 @@ async def ensure_registered(ctx):
         await ctx.channel.send(f"❌ Registration failed: {e}")
         return None
 
+async def ensure_authenticated(ctx, primary):
+    """Ensure the user has completed OAuth login."""
+    try:
+        r = requests.get(f"{API_BASE}/get_user", params={'primary_id': primary})
+        if r.ok:
+            user_doc = r.json()
+            if 'auth' in user_doc:
+                return True
+            session_id = user_doc.get('session_id')
+        else:
+            await ctx.channel.send("Failed to verify authentication.")
+            return False
+    except Exception as e:
+        await ctx.channel.send(f"Auth check failed: {e}")
+        return False
+
+    login_link = f"{API_BASE}/login/TRUE/{session_id}"
+    try:
+        await ctx.author.send(f"❗ Please [Login Here]({login_link}) to authenticate before sending receipts.")
+        await ctx.channel.send("Please check your DM for the login link to complete authentication.")
+    except discord.Forbidden:
+        await ctx.channel.send(f"Please complete authentication: {login_link}")
+    return False
+
 async def process_upload(session_id, file_path, identifier, primary, source, timestamp):
     """
     Background upload to API.
@@ -123,6 +147,8 @@ async def on_message(message):
         # Ensure registration
         primary = await ensure_registered(message)
         if not primary:
+            return
+        if not await ensure_authenticated(message, primary):
             return
 
         # Ensure img_content folder exists

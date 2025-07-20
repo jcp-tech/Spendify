@@ -103,6 +103,13 @@ def get_primary_id(source, identifier):
     logging.info(f"Found primary_id={primary}" if primary else "No primary_id found")
     return primary
 
+def get_user_document(primary_id):
+    """Return the USERDATA document for the given primary_id or None."""
+    logging.info(f"get_user_document: {primary_id}")
+    doc_ref = db.collection('USERDATA').document(primary_id)
+    doc = doc_ref.get()
+    return doc.to_dict() if doc.exists else None
+
 def save_session_meta(session_id, timestamp, main_user, source):
     logging.info(f"save_session_meta: session_id={session_id}, main_user={main_user}, source={source}, timestamp={timestamp}")
     sess_ref = db.collection('SESSIONS').document(session_id)
