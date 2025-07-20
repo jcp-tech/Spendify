@@ -48,6 +48,7 @@ def create_user(primary_id, source, identifier, session_id=None):
     user_ref.set({
         source: identifier,
         'session_id': session_id,
+        'WEB': primary_id,  # Always set WEB as primary_id for web dashboard
     }, merge=True)
     logging.info("User record created/merged")
     return session_id
