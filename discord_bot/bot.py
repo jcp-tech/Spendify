@@ -95,20 +95,15 @@ async def ensure_registered(ctx):
 
 async def ensure_authenticated(ctx, primary):
     """Ensure the user has completed OAuth login."""
-    try:
-        r = requests.get(f"{API_BASE}/get_user", params={'primary_id': primary})
-        if r.ok:
-            user_doc = r.json()
-            if 'auth' in user_doc:
-                return True
-            session_id = user_doc.get('session_id')
-        else:
-            await ctx.channel.send("Failed to verify authentication.")
-            return False
-    except Exception as e:
-        await ctx.channel.send(f"Auth check failed: {e}")
+    user_doc = get_user_document(primary)
+    if not user_doc:
+        await ctx.channel.send("Failed to verify authentication.")
         return False
 
+    if 'auth' in user_doc:
+        return True
+
+    session_id = user_doc.get('session_id')
     login_link = f"{API_BASE}/login/TRUE/{session_id}"
     try:
         await ctx.author.send(f"❗ Please [Login Here]({login_link}) to authenticate before sending receipts.")
