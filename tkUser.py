@@ -85,8 +85,8 @@ def ensure_authenticated(primary, session_id):
     print(f"Please complete OAuth login: {login_link}")
     input("Press Enter once logged in...")
     try:
-        r = requests.get(f"{API_BASE}/get_user", params={'primary_id': primary})
-        return r.ok and 'auth' in r.json()
+        r = get_user_by_primary_id(primary)
+        return r and r.ok and 'auth' in r.json()
     except Exception:
         return False
 
