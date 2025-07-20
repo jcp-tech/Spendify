@@ -39,6 +39,9 @@ The API exposes endpoints for user registration, file uploads and data retrieval
    python main_api.py
    ```
    The dashboard will be available at `http://localhost:<API_PORT>/`.
+5. Refer to
+   - /docs on the web.
+   <!-- - or /... -->
 
 ---
 
