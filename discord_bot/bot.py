@@ -222,10 +222,10 @@ async def quick_status(ctx):
         if 'auth' in user_doc:
             await ctx.channel.send(f"✅ Authenticated and ready! (Primary ID: `{primary}`)")
         else:
-            session_id = user_doc.get('session_id')
-            login_link = f"{API_BASE}/login/TRUE/{session_id}"
+            # session_id = user_doc.get('session_id')
+            # login_link = f"{API_BASE}/login/TRUE/{session_id}"
             try:
-                await ctx.author.send(f"❌ Not authenticated. [Login Here]({login_link}) to complete authentication.")
+                # await ctx.author.send(f"❌ Not authenticated. [Login Here]({login_link}) to complete authentication.") # NOTE: Need to check if this is needed.
                 await ctx.channel.send("❌ Not authenticated. Please check your DM for the login link, or use `!auth` for guided assistance.")
             except discord.Forbidden:
                 await ctx.channel.send("❌ Not authenticated. Cannot send DM - please check your privacy settings. Use `!auth` for guided assistance.")
