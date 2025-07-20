@@ -76,7 +76,6 @@ def ensure_authenticated(primary, session_id):
         user_doc = get_user_data(primary)
         if user_doc:
             if 'auth' in user_doc:
-            if 'auth' in user_doc:
                 return True
             session_id = user_doc.get('session_id', session_id)
     except Exception:
