@@ -39,8 +39,8 @@ def serve_dashboard():
     """Serve the dashboard HTML page with Firebase config"""
     with open(os.path.join(code_dir, 'firebaseConfig.json'), 'r') as f:
         firebase_config = json.load(f)
-    data = get_all_summarised_data_as_df().to_dict(orient='records')
-    logging.info(f"Serving dashboard with {data}.")
+    # data = get_all_summarised_data_as_df().to_dict(orient='records')
+    # logging.info(f"Serving dashboard with {data}.")
     return render_template('index.html', firebase_config=firebase_config)
 
 app.route('/authenticate/<main_source>/<session_id>', methods=['POST'])(authenticate)
