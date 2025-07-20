@@ -6,7 +6,7 @@ from gcp_docai import extract_receipt_data
 from firebase_store import (
     get_primary_id, create_user,
     save_session_meta, save_raw_data, save_receipt_data, save_summarised_data,
-    authenticate, get_all_summarised_data_as_df
+    authenticate, get_all_summarised_data_as_df, get_user_document
 )
 from io import BytesIO
 from PIL import Image
@@ -139,6 +139,16 @@ def get_primary():
         return jsonify({'primary_id': primary}), 200
     logging.warning("Primary ID not found")
     return jsonify({'error': 'not found'}), 404
+
+@app.route('/get_user', methods=['GET'])
+def get_user():
+    primary_id = request.args.get('primary_id')
+    if not primary_id:
+        return jsonify({'error': 'Missing primary_id'}), 400
+    user_doc = get_user_document(primary_id)
+    if not user_doc:
+        return jsonify({'error': 'not found'}), 404
+    return jsonify(user_doc), 200
 
 @app.route('/upload', methods=['POST'])
 def upload():
