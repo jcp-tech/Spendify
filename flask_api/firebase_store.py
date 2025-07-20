@@ -13,7 +13,7 @@ logging.basicConfig(level=logging.INFO, format='[%(asctime)s] %(levelname)s: %(m
 
 load_dotenv()
 
-cred_path = os.getenv('FIREBASE_CREDENTIALS')
+cred_path = os.getenv('FIREBASE_CREDENTIALS', 'firebase_credentials.json')
 logging.info(f"Loading Firebase credentials from: {cred_path}")
 if not cred_path or not os.path.exists(cred_path):
     code_current_dir = os.path.dirname(os.path.abspath(__file__))
@@ -199,6 +199,7 @@ def get_all_summarised_data_as_df(USERNAME=None):
         users_for_session[session_id] = doc.to_dict().get('main_user', None)
     for date_str, session_ids in sessions_to_check.items():
         for uu_id in session_ids:
+            logging.info(f"Fetching summarised data for {date_str}/{uu_id}")
             try:
                 sum_ref = db.collection('DATA').document('SUMMARISED_DATA').collection(date_str).document(uu_id)
                 sum_doc = sum_ref.get().to_dict()
@@ -206,20 +207,21 @@ def get_all_summarised_data_as_df(USERNAME=None):
                     # {'time_taken_seconds': 65.73, 'categories': [{'category': 'Fast Food', 'total': 43.85, 'items': ['Pork Quesadilla', 'Fren Onion Soup', 'Pork Chop', 'Hanger Sizzle']}, {'category': 'Groceries', 'total': 9.95, 'items': ['Mozzarella&Tomato']}, {'category': 'Others', 'total': 0, 'items': []}], 'overall_total': '86.50'}
                     items = []
                     for key in sum_doc['categories']:
-                        if key['total'] != 0:
+                        if float(key['total_price']) != 0 and key['category'] != 'Tax':
                             items.append({
                                 'user_id': users_for_session[uu_id],
                                 'date': date_str,
                                 # 'session_id': uu_id,
                                 'category': key['category'],
-                                'total': key['total'],
+                                'total': float(key['total_price']),
                             })
                     all_data += items
             except Exception as e:
                 logging.error(f"Error fetching summarised data for {date_str}/{uu_id}: {e}")
                 continue
+    logging.info(f"Total summarised records found: {all_data}")
     df = pd.DataFrame(all_data)
-    if USERNAME:
+    if USERNAME and not df.empty:
         df = df[df['user_id'] == USERNAME]
     return df
 # print(get_all_summarised_data_as_df().to_dict(orient='records'))

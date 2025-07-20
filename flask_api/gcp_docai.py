@@ -10,19 +10,8 @@ logging.basicConfig(level=logging.INFO, format='[%(asctime)s] %(levelname)s: %(m
 
 load_dotenv()
 
-def parse_processor_url(url):
-    logging.info(f"Parsing processor URL: {url}")
-    parts = urlparse(url).path.strip('/').split('/')
-    config = {
-        'project_id': parts[2],
-        'location': parts[4],
-        'processor_id': parts[6].split(':')[0]
-    }
-    logging.info(f"Parsed config: {config}")
-    return config
-
 def set_gc_credentials():
-    service_account_file = os.getenv('GOOGLE_APPLICATION_PATH')
+    service_account_file = os.getenv('GOOGLE_APPLICATION_PATH', 'gcp_service_account.json')
     logging.info(f"Setting Google Cloud credentials from: {service_account_file}")
     if not service_account_file or not os.path.exists(service_account_file):
         code_current_dir = os.path.dirname(os.path.abspath(__file__))
@@ -35,8 +24,21 @@ def set_gc_credentials():
     os.environ['GOOGLE_APPLICATION_CREDENTIALS'] = service_account_file
     logging.info("Google Cloud credentials set")
 
+set_gc_credentials()
+
+def parse_processor_url(url):
+    logging.info(f"Parsing processor URL: {url}")
+    parts = urlparse(url).path.strip('/').split('/')
+    config = {
+        'project_id': parts[2],
+        'location': parts[4],
+        'processor_id': parts[6].split(':')[0]
+    }
+    logging.info(f"Parsed config: {config}")
+    return config
+
 def extract_receipt_data(file_path, mime_type='image/jpeg'):
-    set_gc_credentials()
+    # set_gc_credentials()
     processor_url = os.getenv('DOCUMENT_AI_PROCESSOR_URL')
     if not processor_url:
         msg = "DOCUMENT_AI_PROCESSOR_URL environment variable is not set"

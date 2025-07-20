@@ -2,7 +2,7 @@ import os, logging, sys, json, base64
 import uuid
 from flask import Flask, request, jsonify, send_from_directory, render_template, url_for
 from dotenv import load_dotenv
-from gcp_docai import extract_receipt_data
+from gcp_docai import extract_receipt_data #, set_gc_credentials
 from firebase_store import (
     get_primary_id, create_user,
     save_session_meta, save_raw_data, save_receipt_data, save_summarised_data,
@@ -39,6 +39,8 @@ def serve_dashboard():
     """Serve the dashboard HTML page with Firebase config"""
     with open(os.path.join(code_dir, 'firebaseConfig.json'), 'r') as f:
         firebase_config = json.load(f)
+    data = get_all_summarised_data_as_df().to_dict(orient='records')
+    logging.info(f"Serving dashboard with {data}.")
     return render_template('index.html', firebase_config=firebase_config)
 
 app.route('/authenticate/<main_source>/<session_id>', methods=['POST'])(authenticate)
@@ -300,6 +302,7 @@ def upload():
             else:
                 pass # Handle session creation failure if needed | NOTE-TODO
             events = adk.run_sse(session_id, prompt_txt)
+            logging.info(f"Received {len(events)} events from ADK classification for session {session_id}")
             if events is not None:
                 # Extract JSON only if you expect a structured response
                 classified_data = adk.extract_json_from_events(events)
