@@ -34,8 +34,15 @@ sudo apt update
 sudo apt install tmux
 sudo apt install python3-pip
 apt install python3.11-venv
-python3 -m venv venv
-source venv/bin/activate
+sudo apt update && sudo apt install git -y
+git clone https://github.com/jcp-tech/Spendify.git
+python3 -m venv ~/bot-venv
+source ~/bot-venv/bin/activate
+pip install --upgrade pip
+cd Spendify/discord_bot/
+pip install -r requirements.txt
+nano ~/Spendify/discord_bot/.env
+# Add the Env Settings.
 ```
 
 ---
@@ -55,8 +62,8 @@ tmux new -s discordbot
 Navigate to your bot directory, activate your virtual environment, and start your bot:
 
 ```bash
-cd ~/spendify_bot        # Your project directory
-source venv/bin/activate
+cd ~/Spendify/discord_bot/        # Your project directory
+source ~/bot-venv/bin/activate
 python3 bot.py
 ```
 
@@ -91,7 +98,25 @@ python3 bot.py
 
 ---
 
-## 6. SSH Access to Your GCP VM
+## 6. Updating the Code.
+To update your bot code and restart it:
+
+```bash
+cd ~/Spendify
+git pull
+cd discord_bot
+tmux attach -t discordbot
+# Stop the bot with Ctrl + C
+source ~/bot-venv/bin/activate
+python3 bot.py
+```
+
+* Use `Ctrl + C` inside tmux to stop the running bot.
+* After updating, start the bot again with `python3 bot.py`.
+
+---
+
+## 7. SSH Access to Your GCP VM
 
 To SSH into your GCP VM from your local laptop:
 
@@ -124,7 +149,7 @@ Paste the content into the SSH keys section of your GCP VM's settings under **Co
 
 ---
 
-## 7. Best Practices
+## 8. Best Practices
 
 * Always run long-lived scripts (like bots) in a `tmux` session—never directly in SSH!
 * You can have multiple tmux sessions for different projects.
