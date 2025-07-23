@@ -68,7 +68,10 @@ def authenticate(main_source, session_id):
                 f"Registration blocked for {primary_id}: already linked to another auth account"
             )
             return jsonify({'status': 'already_registered'}), 409
-
+        elif 'auth' in user_doc and user_doc['auth'] == decoded_token['uid']:
+            logging.info(f"User {primary_id} already registered with auth {decoded_token['uid']}")
+        # else:
+        #     pass
         create_user(primary_id, 'auth', decoded_token['uid'], session_id)
         """
             {

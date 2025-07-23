@@ -87,7 +87,7 @@ class ADKClient:
         Extracts and parses JSON from the 'text' field in the last event's content['parts'].
         Returns the JSON as a dict, or {} if not found.
         """
-        logging.info(f"Events received: {all_events}")
+        # logging.info(f"Events received: {all_events}")
         ''' # sample events data
                 [
                     {'content': {'parts': [{'text': '{\n  "classified": [\n    {\n      "item": "Coffee",\n      "quantity": "1",\n      "price": "3.50",\n      "category": "Fast Food"\n    },\n    {\n      "item": "Glass House Wine",\n      "quantity": "1",\n      "price": "9.95",\n      "category": "Others"\n    },\n    {\n      "item": "Jumbo Coctail Shrimp",\n      "quantity": "1",\n      "price": "12.95",\n      "category": "Fast Food"\n    },\n    {\n      "item": "Escargot Bourguigonne",\n      "quantity": "1",\n      "price": "10.95",\n      "category": "Fast Food"\n    },\n    {\n      "item": "Veal Zingaria",\n      "quantity": "1",\n      "price": "23.95",\n      "category": "Fast Food"\n    },\n    {\n      "item": "Duckling ala Arancio",\n      "quantity": "1",\n      "price": "25.95",\n      "category": "Fast Food"\n    }\n  ],\n  "total_values_dict": {\n    "total_amount": "94.78",\n    "net_amount": "87.25",\n    "total_tax_amount": "7.53"\n  }\n}'}], 'role': 'model'}, 'usageMetadata': {'candidatesTokenCount': 341, 'candidatesTokensDetails': [{'modality': 'TEXT', 'tokenCount': 341}], 'promptTokenCount': 1176, 'promptTokensDetails': [{'modality': 'TEXT', 'tokenCount': 1176}], 'totalTokenCount': 1517}, 'invocationId': 'e-f23ae033-f4d6-47e8-9195-6e11710ef1de', 'author': 'InitialClassifier', 'actions': {'stateDelta': {'stage_init_classification': {'classified': [{'item': 'Coffee', 'quantity': '1', 'price': '3.50', 'category': 'Fast Food'}, {'item': 'Glass House Wine', 'quantity': '1', 'price': '9.95', 'category': 'Others'}, {'item': 'Jumbo Coctail Shrimp', 'quantity': '1', 'price': '12.95', 'category': 'Fast Food'}, {'item': 'Escargot Bourguigonne', 'quantity': '1', 'price': '10.95', 'category': 'Fast Food'}, {'item': 'Veal Zingaria', 'quantity': '1', 'price': '23.95', 'category': 'Fast Food'}, {'item': 'Duckling ala Arancio', 'quantity': '1', 'price': '25.95', 'category': 'Fast Food'}], 'total_values_dict': {'total_amount': '94.78', 'net_amount': '87.25', 'total_tax_amount': '7.53'}}}, 'artifactDelta': {}, 'requestedAuthConfigs': {}}, 'id': 'd6102c36-da55-4e64-8c9a-7a7ae0ffb6b1', 'timestamp': 1753038162.783302}, 
@@ -103,7 +103,52 @@ class ADKClient:
                     {'content': {'parts': [{'functionCall': {'id': 'adk-5a6d4032-4e5b-479b-aa9f-e0abb9d7dba7', 'args': {'final_total': 94.78, 'data': {'total_values_dict': {'net_amount': '87.25', 'total_tax_amount': '7.53', 'total_amount': '94.78'}, 'classified': [{'category': 'Fast Food', 'item': 'Coffee', 'quantity': '1', 'price': '3.50'}, {'category': 'Others', 'item': 'Glass House Wine', 'price': '9.95', 'quantity': '1'}, {'price': '12.95', 'quantity': '1', 'category': 'Fast Food', 'item': 'Jumbo Coctail Shrimp'}, {'category': 'Fast Food', 'quantity': '1', 'price': '10.95', 'item': 'Escargot Bourguigonne'}, {'category': 'Fast Food', 'price': '23.95', 'quantity': '1', 'item': 'Veal Zingaria'}, {'item': 'Duckling ala Arancio', 'price': '25.95', 'category': 'Fast Food', 'quantity': '1'}]}}, 'name': 'exit_function'}}], 'role': 'model'}, 'usageMetadata': {'candidatesTokenCount': 132, 'candidatesTokensDetails': [{'modality': 'TEXT', 'tokenCount': 132}], 'promptTokenCount': 2214, 'promptTokensDetails': [{'modality': 'TEXT', 'tokenCount': 2214}], 'totalTokenCount': 2346}, 'invocationId': 'e-f23ae033-f4d6-47e8-9195-6e11710ef1de', 'author': 'validate_classification', 'actions': {'stateDelta': {}, 'artifactDelta': {}, 'requestedAuthConfigs': {}}, 'longRunningToolIds': [], 'id': '7963d837-d482-41ba-b816-cf9ec70bfb80', 'timestamp': 1753038170.924978},
                     {'content': {'parts': [{'functionResponse': {'id': 'adk-5a6d4032-4e5b-479b-aa9f-e0abb9d7dba7', 'name': 'exit_function', 'response': {'status': 1, 'details': 'Computed total matches the receipt total. Classification is valid. Exiting the refinement loop.'}}}], 'role': 'user'}, 'invocationId': 'e-f23ae033-f4d6-47e8-9195-6e11710ef1de', 'author': 'validate_classification', 'actions': {'stateDelta': {}, 'artifactDelta': {}, 'escalate': True, 'requestedAuthConfigs': {}}, 'id': '6daa1cc5-8aac-4b43-ad1b-9316ba937d27', 'timestamp': 1753038172.507788},
                     {'content': {'parts': [{'text': '```json\n{\n  "summary": "Final receipt classification summary.",\n  "categories": [\n    {\n      "category": "Fast Food",\n      "items": [\n        "Coffee",\n        "Jumbo Coctail Shrimp",\n        "Escargot Bourguigonne",\n        "Veal Zingaria",\n        "Duckling ala Arancio"\n      ],\n      "total_price": "77.35"\n    },\n    {\n      "category": "Others",\n      "items": [\n        "Glass House Wine"\n      ],\n      "total_price": "17.43"\n    }\n  ],\n  "final_total": 94.78,\n  "status": 1,\n  "notes": "Computed total matches the receipt total. Classification is valid."\n}\n```\n\n'}, {'functionCall': {'id': 'adk-0d52d981-0be9-4620-b5d8-011f980794e2', 'args': {'data': [{'category': 'Fast Food', 'total_price': '77.35', 'items': ['Coffee', 'Jumbo Coctail Shrimp', 'Escargot Bourguigonne', 'Veal Zingaria', 'Duckling ala Arancio']}, {'category': 'Others', 'items': ['Glass House Wine'], 'total_price': '17.43'}]}, 'name': 'save_to_firebase'}}], 'role': 'model'}, 'usageMetadata': {'candidatesTokenCount': 244, 'candidatesTokensDetails': [{'modality': 'TEXT', 'tokenCount': 244}], 'promptTokenCount': 2686, 'promptTokensDetails': [{'modality': 'TEXT', 'tokenCount': 2686}], 'totalTokenCount': 2930}, 'invocationId': 'e-f23ae033-f4d6-47e8-9195-6e11710ef1de', 'author': 'response_agent', 'actions': {'stateDelta': {}, 'artifactDelta': {}, 'requestedAuthConfigs': {}}, 'longRunningToolIds': [], 'id': '7dc62df5-2203-432b-af42-1109537ae9c7', 'timestamp': 1753038172.510478},
-                    {'content': {'parts': [{'functionResponse': {'id': 'adk-0d52d981-0be9-4620-b5d8-011f980794e2', 'name': 'save_to_firebase', 'response': {'result': 'success', 'message': 'Data saved to Firebase.', 'data': '[{"category": "Fast Food", "total_price": "77.35", "items": ["Coffee", "Jumbo Coctail Shrimp", "Escargot Bourguigonne", "Veal Zingaria", "Duckling ala Arancio"]}, {"category": "Others", "items": ["Glass House Wine"], "total_price": "17.43"}]'}}}], 'role': 'user'}, 'invocationId': 'e-f23ae033-f4d6-47e8-9195-6e11710ef1de', 'author': 'response_agent', 'actions': {'stateDelta': {}, 'artifactDelta': {}, 'requestedAuthConfigs': {}}, 'id': '1f2f6371-cad2-4f53-80b2-feb58cdb6442', 'timestamp': 1753038174.434992},
+                    {
+                        'content': {
+                            'parts': [
+                                {
+                                    'functionResponse': {
+                                        'id': 'adk-0d52d981-0be9-4620-b5d8-011f980794e2',
+                                        'name': 'save_to_firebase',
+                                        'response': {
+                                            'result': 'success',
+                                            'message': 'Data saved to Firebase.',
+                                            'data': '[
+                                                {
+                                                    "category": "Fast Food",
+                                                    "total_price": "77.35",
+                                                    "items": [
+                                                        "Coffee",
+                                                        "Jumbo Coctail Shrimp",
+                                                        "Escargot Bourguigonne",
+                                                        "Veal Zingaria",
+                                                        "Duckling ala Arancio"
+                                                    ]
+                                                },
+                                                {
+                                                    "category": "Others",
+                                                    "items": [
+                                                        "Glass House Wine"
+                                                    ],
+                                                    "total_price": "17.43"
+                                                }
+                                            ]'
+                                        }
+                                    }
+                                }
+                            ],
+                            'role': 'user'
+                        },
+                        'invocationId': 'e-f23ae033-f4d6-47e8-9195-6e11710ef1de',
+                        'author': 'response_agent',
+                        'actions': {
+                            'stateDelta': {},
+                            'artifactDelta': {},
+                            'requestedAuthConfigs': {}
+                        },
+                        'id': '1f2f6371-cad2-4f53-80b2-feb58cdb6442',
+                        'timestamp': 1753038174.434992
+                    },
                     {
                         'content': {
                             'parts': [
@@ -151,8 +196,25 @@ class ADKClient:
         parts = content.get('parts', [])
         if not parts:
             return {}
-        part = parts[0]
-        text = part.get('text')
+        part = parts[0]  # usually only one, else loop if you want all
+        if 'text' in part: # Handle text part
+            text = part['text']
+        elif 'functionResponse' in part: # Handle functionResponse part
+            fr = part['functionResponse']['response']
+            # text = fr.get('data', '')
+            # if isinstance(text, dict) or isinstance(text, list):
+            #     text = json.dumps(text)
+            # else: # elif isinstance(text, str):
+            #     # text = text.strip()
+            #     pass
+            logging.info(f"Extracted functionCall: {fc}")
+            return {'type': 'functionCall', 'value': fc}
+        elif 'functionCall' in part: # Handle functionCall part
+            fc = part['functionCall']
+            logging.info(f"Extracted functionResponse: {fr}")
+            return {'type': 'functionResponse', 'value': fr}
+        else:
+            text = None
         if not text:
             return {}
         logging.info(f"Extracted text: {text}")

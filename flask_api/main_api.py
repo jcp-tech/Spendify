@@ -259,7 +259,35 @@ def upload():
     # Store raw & receipts under DATA collection
     date_str = timestamp.split('T')[0]
     logging.info("Saving raw data under DATA/RAW_DATA")
-    save_raw_data(date_str, session_id, sanitized_document_dict, timestamp) # Use sanitized_document_dict
+    def replace_nested_lists_with_json(obj):
+            if isinstance(obj, list):
+                new_list = []
+                for item in obj:
+                    if isinstance(item, list):
+                        # If the item is a list, replace with its JSON string
+                        new_list.append(json.dumps(item))
+                    elif isinstance(item, dict):
+                        new_list.append(replace_nested_lists_with_json(item))
+                    else:
+                        new_list.append(item)
+                return new_list
+            elif isinstance(obj, dict):
+                # For each dict value, check for lists, dicts, or other types
+                return {k: replace_nested_lists_with_json(v) for k, v in obj.items()}
+            else:
+                return obj
+    sanitized_payload = replace_nested_lists_with_json(sanitized_document_dict)
+    try:
+        save_raw_data(date_str, session_id, sanitized_payload, timestamp) # Use sanitized_payload
+    except Exception as e:
+        logging.error(f"Error saving raw data: {e}")
+        save_raw_data(date_str, session_id, {
+            "error": "Failed to save raw data",
+            "details": str(e),
+            "summary": str(type(e)),
+            "original_keys": list(sanitized_payload.keys()),
+            "needed_values": grouped
+        }, timestamp)
     logging.info("Saving receipt data under DATA/RECEIPTS")
     save_receipt_data(date_str, session_id, grouped, timestamp)
 
@@ -313,9 +341,11 @@ def upload():
                 pass # Handle session creation failure if needed | NOTE-TODO
             events = adk.run_sse(session_id, prompt_txt)
             logging.info(f"Received {len(events)} events from ADK classification for session {session_id}")
+            '''
             if events is not None:
                 # Extract JSON only if you expect a structured response
                 classified_data = adk.extract_json_from_events(events)
+                logging.info(f"Extracted classified data: {classified_data}")
                 if classified_data:
                     if "result" in classified_data:
                         if classified_data["result"] == "success":
@@ -325,9 +355,9 @@ def upload():
                                 # logging.info("Final submission data:\n", submission_data)
                                 logging.info(type(submission_data))
                                 submission_data = json.loads(submission_data) if isinstance(submission_data, str) else submission_data
-                                save_summarised_data(date_str, session_id, submission_data, timestamp)
+                                # save_summarised_data(date_str, session_id, submission_data, timestamp)
                             else:
-                                logging.error("No 'data' field in classification response.")
+                                logging.error(f"No 'data' field in classification response.")
                         else:
                             logging.error(f"Error from classification response: {classified_data.get('message', 'Unknown error')}")
                 else:
@@ -335,6 +365,8 @@ def upload():
                     # print(json.dumps(events, indent=2))
             else:
                 logging.error("No events received.")
+            '''
+            logging.info("Classification completed, Summarised Data should be saved now.")
         except Exception as e:
             logging.exception(f"Classification failed for session {session_id}: {e}")
     else:

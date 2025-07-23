@@ -4,19 +4,9 @@ Receipt Classification Response Agent
 
 # response_agent/agent.py
 from google.adk.agents.llm_agent import LlmAgent
-from typing import List, Dict, Any
-from pydantic import BaseModel, Field
 from .tools import save_to_firebase
 
 GEMINI_MODEL = "gemini-2.0-flash"
-
-# ### OUTPUT SCHEMA DEFINITION ###
-# class ReceiptGroupingBreakdown(BaseModel):
-#     category: str = Field(..., description="The category of the items")
-#     items: List[str] = Field(..., description="A list of item names in that category")
-#     total_price: str = Field(..., description="The total price of all items in that category")
-# class ReceiptGroupingOutput(BaseModel):
-#     grouped: List[ReceiptGroupingBreakdown] = Field(..., description="List of grouped receipt items.")
 
 response_agent = LlmAgent(
     name="response_agent",
@@ -39,7 +29,7 @@ Given the validated receipt classification breakdown, perform the following step
 
 
 
-## Example Input to `save_to_firebase` tool:
+## Example Input to `save_to_firebase` tool (VERY STRICT STRUCTURE):
     [
         {
             "category": "Groceries", "items": ["Apple", "Bread"], "total_price": "3.55"
@@ -69,6 +59,5 @@ Take the Data from the 'grouped_classification' key in the input JSON and use it
 """,
     description="Generates and saves the final receipt classification summary to Firebase.",
     tools=[save_to_firebase],
-    # output_schema=Dict[str, Any],  # The output will be the result from the save_to_firebase tool
     output_key="firebase_save_result"
 )

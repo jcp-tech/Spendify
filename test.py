@@ -31,13 +31,14 @@ if __name__ == "__main__":
     # Send message and get all raw events
     prompt = prompt_txt
     events = adk.run_sse(session_id, prompt)
-    if events is not None:
-        # Extract JSON only if you expect a structured response
-        classified_data = adk.extract_json_from_events(events)
-        if classified_data:
-            print("Final classified data:\n", json.dumps(classified_data, indent=2))
-        else:
-            print("No structured JSON data found. Events received:")
-            print(json.dumps(events, indent=2))
-    else:
-        print("No events received.")
+    # if events is not None:
+    #     # Extract JSON only if you expect a structured response
+    #     classified_data = adk.extract_json_from_events(events)
+    #     if classified_data:
+    #         print("Final classified data:\n", json.dumps(classified_data, indent=2))
+    #     else:
+    #         print("No structured JSON data found. Events received:")
+    #         print(json.dumps(events, indent=2))
+    # else:
+    #     print("No events received.")
+    print("Events received:", json.dumps(events, indent=2))
