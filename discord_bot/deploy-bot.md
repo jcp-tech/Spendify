@@ -98,7 +98,8 @@ python3 bot.py
 
 ---
 
-## 6. Updating the Code.
+## 6. Updating the Code
+
 To update your bot code and restart it:
 
 ```bash
