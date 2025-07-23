@@ -60,7 +60,15 @@ def authenticate(main_source, session_id):
     id_token = request.json.get('idToken')
     # is_new_user = request.json.get('isNewUser')  # <--- NEW
     try:
-        decoded_token = auth.verify_id_token(id_token) # Verify the ID token
+        decoded_token = auth.verify_id_token(id_token)  # Verify the ID token
+        # Prevent overwriting an existing auth identifier
+        user_doc = db.collection('USERDATA').document(primary_id).get().to_dict() or {}
+        if 'auth' in user_doc and user_doc['auth'] != decoded_token['uid']:
+            logging.warning(
+                f"Registration blocked for {primary_id}: already linked to another auth account"
+            )
+            return jsonify({'status': 'already_registered'}), 409
+
         create_user(primary_id, 'auth', decoded_token['uid'], session_id)
         """
             {

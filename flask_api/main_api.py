@@ -69,6 +69,11 @@ def register_user_page():
         firebase_config = json.load(f)
     return render_template('register.html', firebase_config=firebase_config)
 
+# Inform user when attempting to register with an existing account
+@app.route('/already_registered', methods=['GET'])
+def already_registered_page():
+    return render_template('already_registered.html')
+
 # Serve page for uploading receipts via the web dashboard
 @app.route('/upload_page', methods=['GET'])
 def upload_page():
@@ -153,6 +158,11 @@ def register():
     logging.info(f"Register request: source={source}, identifier={identifier}, primary_id={primary_id}")
     if not source or not identifier:
         return jsonify({'error': 'Missing source or identifier'}), 400
+    existing_doc = get_user_document(primary_id)
+    if existing_doc and 'auth' in existing_doc:
+        logging.warning(f"Registration attempt for existing user {primary_id}")
+        return jsonify({'status': 'already_registered'}), 409
+
     session_id = create_user(primary_id, source, identifier)
     logging.info(f"User created/updated: {primary_id} -> {source}:{identifier}")
     return jsonify({'status': 'registered', 'primary_id': primary_id, 'session_id': session_id}), 200
