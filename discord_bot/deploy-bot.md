@@ -113,6 +113,7 @@ python3 bot.py
 
 * Use `Ctrl + C` inside tmux to stop the running bot.
 * After updating, start the bot again with `python3 bot.py`.
+* Press `Ctrl + B`, then release both keys and press `D`. (to Exit TMUX)
 
 ---
 
