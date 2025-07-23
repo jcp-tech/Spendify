@@ -46,6 +46,7 @@ adk deploy cloud_run \
   --with_ui \
   ./path/to/your_agent
 ```
+
 > Filled
 ```sh
 adk deploy cloud_run \
@@ -58,4 +59,5 @@ adk deploy cloud_run \
   --with_ui \
   ./receipt_classifier
 ```
+
 ---

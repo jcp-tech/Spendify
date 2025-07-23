@@ -4,10 +4,10 @@ if [ -d "venv-linux" ] && [ -f "venv-linux/bin/activate" ]; then
     echo "Activated Python: $(which python)"
 fi
 
-## Source all .env files in the current directory and subdirectories
-for env_file in $(find . -type f -name '*.env'); do # find . -type f -name '*.env' | while IFS= read -r env_file; do
-    echo "Found: $env_file"
-    set -a
-    source "$env_file"
-    set +a
-done
+# ## Source all .env files in the current directory and subdirectories
+# for env_file in $(find . -type f -name '*.env'); do # find . -type f -name '*.env' | while IFS= read -r env_file; do
+#     echo "Found: $env_file"
+#     set -a
+#     source "$env_file"
+#     set +a
+# done
