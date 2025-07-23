@@ -69,17 +69,26 @@
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ source: 'WEB', identifier: primary, primary_id: primary })
                 });
-                if (!resp.ok) { throw new Error('Registration failed'); }
                 const data = await resp.json();
+                if (resp.status === 409 && data.status === 'already_registered') {
+                    window.location.href = '/already_registered';
+                    return;
+                }
+                if (!resp.ok) { throw new Error('Registration failed'); }
                 const sessionId = data.session_id;
                 const provider = new GoogleAuthProvider();
                 const result = await signInWithPopup(auth, provider);
                 const idToken = await result.user.getIdToken();
-                await fetch(`/authenticate/FALSE/${sessionId}`, {
+                const authResp = await fetch(`/authenticate/FALSE/${sessionId}`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ idToken })
                 });
+                const authData = await authResp.json();
+                if (authResp.status === 409 && authData.status === 'already_registered') {
+                    window.location.href = '/already_registered';
+                    return;
+                }
                 localStorage.setItem('primary_id', primary);
                 window.location.href = '/';
             } catch (err) {
