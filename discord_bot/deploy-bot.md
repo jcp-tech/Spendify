@@ -188,6 +188,7 @@ scp -i <path to private key> <local file path> <username>@<ip address>:<remote d
 ```bash
 scp -i "C:\Users\JonathanChackoPattas\.ssh\seneca_temp" "C:\Users\JonathanChackoPattas\OneDrive - Maritime Support Solutions\Desktop\Spendify\discord_bot\<local_file_name>" azuread\jonathanchackopattas@34.132.211.201:~/spendify_bot
 ```
+
 scp -i "C:\Users\JonathanChackoPattas\.ssh\seneca_temp" "C:\Users\JonathanChackoPattas\OneDrive - Maritime Support Solutions\Desktop\Spendify\<local_file_name>" azuread\jonathanchackopattas@discord-bot-spendify-deploy:~/spendify_bot
 
 > Repeat the command for each file you want to transfer.
@@ -200,7 +201,7 @@ scp -i "C:\Users\JonathanChackoPattas\.ssh\seneca_temp" "C:\Users\JonathanChacko
 
 **Example destination:**
 
-```
+```bash
 <username>@discord-bot-spendify-deploy:~/spendify_bot
 ```
 
