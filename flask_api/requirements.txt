@@ -9,3 +9,4 @@ Pillow
 pandas
 numpy
 google-generativeai
+flask-cors
