@@ -24,6 +24,46 @@
       background:#fff; padding:30px; border-radius:12px; box-shadow:0 6px 10px rgba(0,0,0,0.15); width:340px; text-align:center;
     }
     #loginBox button { width:100%; background:#6246ea; color:#fff; border:none; padding:12px; border-radius:8px; cursor:pointer; }
+    #uploadBox {
+      background: #fff;
+      padding: 2rem;
+      border-radius: 12px;
+      box-shadow: 0 6px 10px rgba(0,0,0,0.05);
+      text-align: center;
+    }
+    #dropZone {
+      border: 2px dashed #ccc;
+      border-radius: 8px;
+      padding: 40px 20px;
+      cursor: pointer;
+      transition: background-color 0.2s, border-color 0.2s;
+    }
+    #dropZone.dragover {
+      background-color: #f0f0f0;
+      border-color: #6246ea;
+    }
+    #preview {
+      margin-top: 1.5rem;
+      max-width: 100%;
+      height: auto;
+      max-height: 300px;
+      border-radius: 8px;
+      display: none;
+    }
+    #uploadBtn {
+      background: #6246ea;
+      color: #fff;
+      border: none;
+      padding: 12px 24px;
+      border-radius: 8px;
+      cursor: pointer;
+      margin-top: 1rem;
+      display: none; /* Initially hidden */
+    }
+    #uploadResult {
+      margin-top: 1rem;
+      font-weight: bold;
+    }
   </style>
 </head>
 <body>
@@ -48,13 +88,20 @@
       <div class="header">
         <div>
           <h1>Upload Receipt</h1>
-          <p>Select an image to process</p>
+          <p>Select or drop an image file to process</p>
         </div>
         <button id="logoutBtn" style="background:#e53e3e;color:#fff;border:none;padding:8px 16px;border-radius:6px;cursor:pointer;">Logout</button>
       </div>
-      <input type="file" id="receiptFile" accept="image/*" />
-      <button id="uploadBtn" style="margin-left:1rem;">Upload</button>
-      <p id="uploadResult"></p>
+      
+      <div id="uploadBox">
+        <div id="dropZone">
+          <p>Drag & drop your receipt image here, or click to select a file.</p>
+          <input type="file" id="receiptFile" accept="image/*" hidden />
+        </div>
+        <img id="preview" src="#" alt="Image Preview" />
+        <button id="uploadBtn">Upload</button>
+        <p id="uploadResult"></p>
+      </div>
     </div>
   </div>
 
@@ -118,6 +165,45 @@
     const uploadBtn = document.getElementById('uploadBtn');
     const receiptFile = document.getElementById('receiptFile');
     const uploadResult = document.getElementById('uploadResult');
+    const dropZone = document.getElementById('dropZone');
+    const preview = document.getElementById('preview');
+
+    dropZone.addEventListener('click', () => receiptFile.click());
+
+    dropZone.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      dropZone.classList.add('dragover');
+    });
+
+    dropZone.addEventListener('dragleave', () => {
+      dropZone.classList.remove('dragover');
+    });
+
+    dropZone.addEventListener('drop', (e) => {
+      e.preventDefault();
+      dropZone.classList.remove('dragover');
+      const files = e.dataTransfer.files;
+      if (files.length) {
+        receiptFile.files = files;
+        handleFileSelect();
+      }
+    });
+
+    receiptFile.addEventListener('change', handleFileSelect);
+
+    function handleFileSelect() {
+      const file = receiptFile.files[0];
+      if (file) {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          preview.src = e.target.result;
+          preview.style.display = 'block';
+        };
+        reader.readAsDataURL(file);
+        uploadBtn.style.display = 'block';
+        uploadResult.textContent = '';
+      }
+    }
 
     uploadBtn.addEventListener('click', async () => {
       if (!receiptFile.files.length) {
@@ -167,6 +253,8 @@
       } finally {
         uploadBtn.disabled = false;
         receiptFile.value = ''; // Clear file input
+        preview.style.display = 'none';
+        uploadBtn.style.display = 'none';
       }
     });
 

@@ -1,20 +1,18 @@
-import os, logging, sys, json, base64
-import uuid
 from flask import Flask, request, jsonify, send_from_directory, render_template, url_for
+# from flask_cors import CORS
+import os, logging, json # , base64, sys
+import uuid
 from dotenv import load_dotenv
 from gcp_docai import extract_receipt_data #, set_gc_credentials
 from firebase_store import (
     get_primary_id, create_user,
-    save_session_meta, save_raw_data, save_receipt_data, save_summarised_data,
+    save_session_meta, save_raw_data, save_receipt_data, # save_summarised_data,
     authenticate, login_check, get_all_summarised_data_as_df, get_user_document
 )
-from io import BytesIO
-from PIL import Image
 from gcp_adk_classification import ADKClient
 from datetime import datetime
-from flask_cors import CORS
-import calendar
 import pandas as pd
+import calendar
 
 code_dir = os.path.dirname(os.path.abspath(__file__))
 DASHBOARD_DIR = os.path.join(code_dir, "dashboard") # Directory to serve the dashboard HTML from
@@ -27,7 +25,7 @@ CLASSIFICATION_URL = os.getenv('CLASSIFICATION_URL', 'http://localhost:8000')
 # Setup logging
 logging.basicConfig(level=logging.INFO, format='[%(asctime)s] %(levelname)s: %(message)s')
 app = Flask(__name__, template_folder=DASHBOARD_DIR)
-CORS(app)  # This allows all origins; restrict for production!
+# CORS(app)  # This allows all origins; restrict for production!
 
 def safe_sum(val1, val2):
     try:
