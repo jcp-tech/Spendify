@@ -193,6 +193,30 @@ def get_user():
         return jsonify({'error': 'not found'}), 404
     return jsonify(user_doc), 200
 
+@app.route('/upload', methods=['POST'])
+def upload_receipt():
+    """Save uploaded receipt image and session metadata."""
+    file = request.files.get('file')
+    session_id = request.form.get('session_id') or str(uuid.uuid4())
+    identifier = request.form.get('identifier')
+    source = request.form.get('source')
+    timestamp = request.form.get('timestamp') or datetime.utcnow().isoformat()
+
+    if not file or not identifier or not source:
+        return jsonify({'error': 'Missing required fields'}), 400
+
+    uploads_dir = os.path.join(code_dir, 'uploads')
+    os.makedirs(uploads_dir, exist_ok=True)
+    ext = os.path.splitext(file.filename)[1] or '.jpg'
+    save_path = os.path.join(uploads_dir, f"{session_id}{ext}")
+    file.save(save_path)
+
+    save_session_meta(session_id, timestamp, identifier, source)
+
+    logging.info(f"Stored upload at {save_path} for {identifier}")
+
+    return jsonify({'status': 'uploaded', 'session_id': session_id})
+
 @app.route('/get_data', methods=['GET'])
 def get_data():
     # If Username is provided, return summarised data for that user
