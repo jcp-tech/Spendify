@@ -343,7 +343,11 @@ def upload():
             else:
                 pass # Handle session creation failure if needed | NOTE-TODO
             events = adk.run_sse(session_id, prompt_txt)
-            logging.info(f"Received {len(events)} events from ADK classification for session {session_id}")
+            if events is not None:
+                logging.info(f"Received {len(events)} events from ADK classification for session {session_id}")
+                logging.info(f"Events: {events}")  # Log first 5 events for brevity
+            else:
+                logging.warning(f"No events received from ADK classification for session {session_id}")
             '''
             if events is not None:
                 # Extract JSON only if you expect a structured response

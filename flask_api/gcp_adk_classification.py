@@ -14,7 +14,7 @@ class ADKClient:
             return self.random_session_url()
         else:
             return f"{self.adk_url}/apps/{self.app_name}/users/{self.user_id}/sessions/{self.session_id}" 
-    def get_or_create_session(self, method="POST", payload=None, custom_session=False):
+    def get_or_create_session(self, method="POST", payload={}, custom_session=False):
         # Decide which URL to use based on session_id and custom_session flag
         if self.session_id is None or not custom_session:
             url = self.random_session_url()
