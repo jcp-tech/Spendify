@@ -115,6 +115,61 @@
       loginContainer.style.display = 'flex';
     });
 
+    const uploadBtn = document.getElementById('uploadBtn');
+    const receiptFile = document.getElementById('receiptFile');
+    const uploadResult = document.getElementById('uploadResult');
+
+    uploadBtn.addEventListener('click', async () => {
+      if (!receiptFile.files.length) {
+        uploadResult.textContent = 'Please select a file first.';
+        uploadResult.style.color = 'red';
+        return;
+      }
+
+      const primaryId = localStorage.getItem('primary_id');
+      if (!primaryId) {
+        uploadResult.textContent = 'Not logged in. Please refresh and log in.';
+        uploadResult.style.color = 'red';
+        return;
+      }
+
+      uploadBtn.disabled = true;
+      uploadResult.textContent = 'Uploading...';
+      uploadResult.style.color = 'black';
+
+      const file = receiptFile.files[0];
+      const formData = new FormData();
+      const sessionId = crypto.randomUUID();
+      formData.append('file', file);
+      formData.append('identifier', primaryId);
+      formData.append('session_id', sessionId);
+      formData.append('source', 'WEB');
+      formData.append('timestamp', new Date().toISOString());
+      formData.append('optimize', 'True');
+
+      try {
+        const resp = await fetch('/upload', {
+          method: 'POST',
+          body: formData
+        });
+
+        const data = await resp.json();
+        if (resp.ok) {
+          uploadResult.textContent = `Upload successful! Message: ${data.message || 'OK'} (Session: ${sessionId})`;
+          uploadResult.style.color = 'green';
+        } else {
+          uploadResult.textContent = `Upload failed: ${data.error || resp.statusText} (Session: ${sessionId})`;
+          uploadResult.style.color = 'red';
+        }
+      } catch (e) {
+        uploadResult.textContent = `Upload error: ${e.message} (Session: ${sessionId})`;
+        uploadResult.style.color = 'red';
+      } finally {
+        uploadBtn.disabled = false;
+        receiptFile.value = ''; // Clear file input
+      }
+    });
+
   </script>
 </body>
 </html>
