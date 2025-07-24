@@ -143,8 +143,9 @@ def get_user_document(primary_id):
     doc_ref = db.collection('USERDATA').document(primary_id)
     doc = doc_ref.get()
     doc_dict = doc.to_dict() if doc.exists else None
-    if 'decoded_token' in doc_dict:
-        del doc_dict['decoded_token'] # Remove the decoded_token field to avoid sending sensitive data
+    if doc_dict is not None:
+        if 'decoded_token' in doc_dict:
+            del doc_dict['decoded_token'] # Remove the decoded_token field to avoid sending sensitive data
     return doc_dict
 
 def save_session_meta(session_id, timestamp, main_user, source):

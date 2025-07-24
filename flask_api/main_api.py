@@ -162,10 +162,13 @@ def register():
     if existing_doc and 'auth' in existing_doc:
         logging.warning(f"Registration attempt for existing user {primary_id}")
         return jsonify({'status': 'already_registered'}), 409
-
-    session_id = create_user(primary_id, source, identifier)
-    logging.info(f"User created/updated: {primary_id} -> {source}:{identifier}")
-    return jsonify({'status': 'registered', 'primary_id': primary_id, 'session_id': session_id}), 200
+    try:
+        session_id = create_user(primary_id, source, identifier)
+        logging.info(f"User created/updated: {primary_id} -> {source}:{identifier}")
+        return jsonify({'status': 'registered', 'primary_id': primary_id, 'session_id': session_id}), 200
+    except Exception as e:
+        logging.exception(f"Error in create_user for primary_id {primary_id}")
+        return jsonify({'error': 'Failed to create user in database', 'details': str(e)}), 500
 
 @app.route('/get_primary', methods=['GET'])
 def get_primary():
