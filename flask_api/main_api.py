@@ -330,7 +330,7 @@ def upload():
     if line_items:
         logging.info(f"Classifying {len(line_items)} items for session {session_id} with totals {receipt_total_value}")
         try:
-            adk = ADKClient(CLASSIFICATION_URL, "CLASSIFICATION_APP", user_id="user", session_id=session_id)
+            adk = ADKClient(CLASSIFICATION_URL, CLASSIFICATION_APP, user_id="user", session_id=session_id)
             prompt_txt = json.dumps({
                 "line_items": line_items,
                 "receipt_total_value": receipt_total_value,
