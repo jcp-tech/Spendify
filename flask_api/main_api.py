@@ -21,6 +21,7 @@ DASHBOARD_DIR = os.path.join(code_dir, "dashboard") # Directory to serve the das
 load_dotenv()
 API_PORT = int(os.getenv('API_PORT', 8080))
 CLASSIFICATION_URL = os.getenv('CLASSIFICATION_URL', 'http://localhost:8000')
+CLASSIFICATION_APP = os.getenv('CLASSIFICATION_APP_NAME', 'receipt-classifier')
 
 # Setup logging
 logging.basicConfig(level=logging.INFO, format='[%(asctime)s] %(levelname)s: %(message)s')
@@ -329,7 +330,7 @@ def upload():
     if line_items:
         logging.info(f"Classifying {len(line_items)} items for session {session_id} with totals {receipt_total_value}")
         try:
-            adk = ADKClient(CLASSIFICATION_URL, "receipt_classifier", user_id="user", session_id=session_id)
+            adk = ADKClient(CLASSIFICATION_URL, "CLASSIFICATION_APP", user_id="user", session_id=session_id)
             prompt_txt = json.dumps({
                 "line_items": line_items,
                 "receipt_total_value": receipt_total_value,
