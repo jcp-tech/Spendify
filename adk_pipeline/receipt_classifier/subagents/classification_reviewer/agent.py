@@ -8,8 +8,9 @@ This agent validates that the grouped classification output matches the receipt 
 from google.adk.agents.llm_agent import LlmAgent
 from .tools import calculate_final_total, exit_function
 # from google.adk.tools import exit_loop
+import os
 
-GEMINI_MODEL = "gemini-2.0-flash" # Constants
+GEMINI_MODEL = os.getenv('GOOGLE_GENAI_MODEL', 'gemini-2.0-flash')
 
 validate_classification = LlmAgent(
     name="validate_classification",

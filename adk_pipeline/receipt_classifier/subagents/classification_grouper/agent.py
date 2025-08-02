@@ -7,9 +7,10 @@ from google.adk.agents.llm_agent import LlmAgent
 from typing import List, Dict, Any
 from pydantic import BaseModel, Field
 # from .tools import group_the_classification
+import os
 
 # Constants
-GEMINI_MODEL = "gemini-2.0-flash"
+GEMINI_MODEL = os.getenv('GOOGLE_GENAI_MODEL', 'gemini-2.0-flash')
 
 ### OUTPUT SCHEMA DEFINITION ###
 class ReceiptGroupingBreakdown(BaseModel):

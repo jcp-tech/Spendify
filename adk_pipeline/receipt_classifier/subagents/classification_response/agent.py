@@ -5,8 +5,9 @@ Receipt Classification Response Agent
 # response_agent/agent.py
 from google.adk.agents.llm_agent import LlmAgent
 from .tools import save_to_firebase
+import os
 
-GEMINI_MODEL = "gemini-2.0-flash"
+GEMINI_MODEL = os.getenv('GOOGLE_GENAI_MODEL', 'gemini-2.0-flash')
 
 response_agent = LlmAgent(
     name="response_agent",

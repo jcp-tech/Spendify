@@ -8,6 +8,7 @@ This agent generates the initial Classification before grouping.
 from google.adk.agents.llm_agent import LlmAgent
 from typing import List, Dict, Any
 from pydantic import BaseModel, Field
+import os
 
 ### INPUT SCHEMA DEFINITION ###
 class ReceiptTotalValue(BaseModel):
@@ -40,8 +41,9 @@ class ReceiptClassificationBreakdown(BaseModel):
 class ReceiptClassificationOutput(BaseModel):
     classified: List[ReceiptClassificationBreakdown] = Field(..., description="List of classified receipt items.") # List[Dict[str, Any]] = Field(..., description="List of classified receipt items.")
     total_values_dict: ReceiptTotalValue = Field(..., description="Total, net, and tax values from the receipt, as a dictionary. Raw, may have any keys.") # Dict[str, Any] = Field(..., description="Total, net, and tax values from the receipt, as a dictionary. Raw, may have any keys.")
+
 # Constants
-GEMINI_MODEL = "gemini-2.0-flash" # "gemini-2.5-flash"
+GEMINI_MODEL = os.getenv('GOOGLE_GENAI_MODEL', 'gemini-2.0-flash')
 
 # Define the Initial Classifier Agent
 initial_classifier = LlmAgent(

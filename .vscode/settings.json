@@ -29,7 +29,7 @@
             ]
         }
     },
-    "python.defaultInterpreterPath": "${workspaceFolder}/venv-linux/bin/python", // "${workspaceFolder}/venv-linux/bin/python",
+    "python.defaultInterpreterPath": "${workspaceFolder}/venv-windows/Scripts/python.exe", // "${workspaceFolder}/venv-linux/bin/python",
     "terminal.integrated.defaultProfile.windows": "PowerShell", // "WSL",
     "IDX.aI.enableInlineCompletion": true,
     "IDX.aI.enableCodebaseIndexing": true

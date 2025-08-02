@@ -6,9 +6,9 @@ This agent refines the grouped classification breakdown based on validation feed
 
 # classification_refiner/agent.py
 from google.adk.agents.llm_agent import LlmAgent
+import os
 
-# Constants
-GEMINI_MODEL = "gemini-2.0-flash"
+GEMINI_MODEL = os.getenv('GOOGLE_GENAI_MODEL', 'gemini-2.0-flash')
 
 refine_classifier = LlmAgent(
     name="refine_classifier",
