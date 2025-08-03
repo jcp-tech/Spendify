@@ -60,27 +60,63 @@ Spendify/
 │   ├── bot.py                # Main Discord bot
 │   ├── requirements.txt      # Bot dependencies
 │   ├── deploy-bot.md         # Bot deployment guide
-│   └── .env.template         # Environment template
+│   ├── .env.template         # Environment template
+│   ├── img_content/          # Bot image content
+│   └── README.md             # Bot documentation
 ├── flask_api/                # Main API server module
-|   ├── discord_bot/               # Discord bot module
-│   |   └── index.html           # Frontend
 │   ├── main_api.py           # Flask API server
 │   ├── gcp_docai.py          # OCR processing
 │   ├── firebase_store.py     # Data storage
 │   ├── gcp_adk_classification.py # ADK client
 │   ├── requirements.txt      # API dependencies
 │   ├── deploy-api.md         # API deployment guide
-│   ├── Dockerfile.api        # Docker configuration
+│   ├── deploy.sh             # Deployment script
+│   ├── Dockerfile            # Docker configuration
+│   ├── firebaseConfig.json.template # Firebase config template
+│   ├── serviceAccountKey.json.template # Service account template
+│   ├── .env.template         # Environment template
+│   ├── dashboard/            # Web dashboard
+│   │   ├── index.html        # Main dashboard
+│   │   ├── login.html        # Login page
+│   │   ├── register.html     # Registration page
+│   │   ├── upload.html       # Upload page
+│   │   ├── chat.html         # Chat interface
+│   │   └── already_registered.html # Registration status
 │   ├── uploads/              # API file uploads
-│   └── .env.template         # Environment template
+│   └── README.md             # API documentation
 ├── adk_pipeline/             # Agent Development Kit pipeline
 │   ├── receipt_classifier/   # Agent pipeline
-│   │   ├── agent.py          # Root agent
-│   │   ├── subagents/        # Individual agents
-│   │   └── __init__.py       # Package initialization
-│   ├── requirements.txt      # ADK dependencies
+│   │   ├── agent.py          # Root agent orchestrator
+│   │   ├── requirements.txt  # Agent dependencies
+│   │   ├── firebase_credentials.json.template # Firebase template
+│   │   ├── .env.template     # Environment template
+│   │   ├── __init__.py       # Package initialization
+│   │   └── subagents/        # Individual processing agents
+│   │       ├── classifier_init/      # Initial classification agent
+│   │       │   ├── agent.py          # Categorizes line items
+│   │       │   └── __init__.py       # Agent initialization
+│   │       ├── classification_grouper/ # Item grouping agent
+│   │       │   ├── agent.py          # Groups items by category
+│   │       │   ├── tools.py          # Grouping utilities
+│   │       │   └── __init__.py       # Agent initialization
+│   │       ├── classification_reviewer/ # Validation agent
+│   │       │   ├── agent.py          # Validates classifications
+│   │       │   ├── tools.py          # Review utilities
+│   │       │   └── __init__.py       # Agent initialization
+│   │       ├── classification_refiner/ # Correction agent
+│   │       │   ├── agent.py          # Refines misclassifications
+│   │       │   └── __init__.py       # Agent initialization
+│   │       └── classification_response/ # Final response agent
+│   │           ├── agent.py          # Generates final summary
+│   │           ├── tools.py          # Response utilities
+│   │           ├── firebase_store.py # Data persistence
+│   │           └── __init__.py       # Agent initialization
+│   ├── evals/                # Evaluation data
 │   ├── deploy-adk.md         # ADK deployment guide
+│   ├── deploy.sh             # Deployment script
 │   ├── flow.png              # Pipeline flow diagram
+│   ├── firebase_credentials.json # Firebase credentials
+│   ├── .env.template         # Environment template
 │   └── README.md             # ADK documentation
 ├── process.png               # System process diagram
 └── README.md                 # Project documentation
