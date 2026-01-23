@@ -12,3 +12,4 @@
 **/gcp_service_account.json
 **/firebase_credentials.json
 **/firebaseConfig.json
+adk_pipeline/receipt_classifier/.adk/session.db
