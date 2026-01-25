@@ -33,5 +33,10 @@ def save_to_firebase(
     dt = datetime.now()
     session_id = tool_context._invocation_context.session.id
     print("Saving to Firebase:", data)
-    save_summarised_data(dt.strftime("%Y-%m-%d"), session_id, data, dt)
-    return {"result": "success", "message": "Data saved to Firebase.", "data": json.dumps(data)}
+    # Convert Pydantic model to dict for Firestore compatibility
+    if hasattr(data, 'model_dump'):
+        data_dict = data.model_dump()
+    else:
+        data_dict = data.dict()
+    save_summarised_data(dt.strftime("%Y-%m-%d"), session_id, data_dict['categories'], dt)
+    return {"result": "success", "message": "Data saved to Firebase.", "data": json.dumps(data_dict)}

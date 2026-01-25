@@ -197,22 +197,19 @@ class ADKClient:
         if not parts:
             return {}
         part = parts[0]  # usually only one, else loop if you want all
-        if 'text' in part: # Handle text part
+        ### To-Recheck.
+        if 'text' in part:  # Handle text part
             text = part['text']
-        elif 'functionResponse' in part: # Handle functionResponse part
+        elif 'functionResponse' in part:  # Handle functionResponse part
             fr = part['functionResponse']['response']
-            # text = fr.get('data', '')
-            # if isinstance(text, dict) or isinstance(text, list):
-            #     text = json.dumps(text)
-            # else: # elif isinstance(text, str):
-            #     # text = text.strip()
-            #     pass
-            logging.info(f"Extracted functionCall: {fc}")
-            return {'type': 'functionCall', 'value': fc}
-        elif 'functionCall' in part: # Handle functionCall part
-            fc = part['functionCall']
+            # logging.info(f"Extracted functionResponse: {fr}")
+            # return fr
             logging.info(f"Extracted functionResponse: {fr}")
             return {'type': 'functionResponse', 'value': fr}
+        elif 'functionCall' in part:  # Handle functionCall part
+            fc = part['functionCall']
+            logging.info(f"Extracted functionCall: {fc}")
+            return {'type': 'functionCall', 'value': fc}
         else:
             text = None
         if not text:

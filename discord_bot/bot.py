@@ -71,10 +71,10 @@ async def ensure_authenticated(ctx, primary):
         
         # Wait for either timeout or user message
         def check_message(m):
-            return (m.author == ctx.author and 
-                   m.channel == ctx.channel and 
-                   m.content.lower() in ['check', 'done', 'ready'])
-        
+            return (m.author == ctx.author and
+                    m.channel == ctx.channel and
+                    m.content.lower() in ['check', 'done', 'ready'])
+
         try:
             # Wait for either 30 seconds or user message
             await asyncio.wait_for(
@@ -263,7 +263,17 @@ async def process_upload(session_id, file_path, identifier, primary, source, tim
                 'timestamp': timestamp,
                 'optimize': OPTIMISE,         # Ensure string type for form field (default True)
             }
-            requests.post(f"{API_BASE}/upload", files=files, data=data, timeout=30)
+            # Run blocking request in a separate thread to avoid blocking the event loop
+            await asyncio.to_thread(
+                partial(
+                    requests.post,
+                    f"{API_BASE}/upload",
+                    files=files,
+                    data=data,
+                    timeout=300  # Increased timeout to 5 minutes
+                )
+            )
+            print(f"[✅] Background upload completed for session {session_id}")
     except Exception as e:
         print(f"[❌] Background upload failed for session {session_id}: {e}")
 

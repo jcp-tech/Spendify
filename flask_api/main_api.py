@@ -21,7 +21,7 @@ DASHBOARD_DIR = os.path.join(code_dir, "dashboard") # Directory to serve the das
 load_dotenv()
 API_PORT = int(os.getenv('API_PORT', 8080))
 CLASSIFICATION_URL = os.getenv('CLASSIFICATION_URL', 'http://localhost:8000')
-CLASSIFICATION_APP = os.getenv('CLASSIFICATION_APP_NAME', 'receipt-classifier')
+CLASSIFICATION_APP = os.getenv('CLASSIFICATION_APP_NAME', 'receipt_classifier')
 
 # Setup logging
 logging.basicConfig(level=logging.INFO, format='[%(asctime)s] %(levelname)s: %(message)s')
@@ -33,6 +33,10 @@ def safe_sum(val1, val2):
         return [str(float(val1[0]) + float(val2[0]))]
     except Exception:
         return None
+
+def get_current_timestamp():
+    # "2026-01-25T00:05:00.798000+00:00"
+    return datetime.now().strftime('%Y-%m-%dT%H:%M:%S.%fZ')
 
 # Route to serve the dashboard UI
 @app.route('/', methods=['GET'])
@@ -101,7 +105,15 @@ def summary():
 
     df = get_all_summarised_data_as_df(USERNAME=user_id)
     if df.empty:
-        return jsonify({'error': 'No data found'}), 404
+        # Return default "zero" data instead of 404
+        return jsonify({
+            'total_monthly_spend': 0.0,
+            'average_daily_spend': 0.0,
+            'top_category': 'None',
+            'top_category_total': 0.0,
+            'expense_by_category': {'labels': [], 'values': []},
+            'weekly_spending': {'labels': [calendar.day_name[i] for i in range(7)], 'values': [0.0]*7}
+        })
 
     total_spend = df['total'].sum()
     avg_daily_spend = total_spend / df['date'].nunique()
@@ -202,7 +214,7 @@ def upload():
     session_id = request.form.get('session_id')
     identifier = request.form.get('identifier')
     source = request.form.get('source')
-    timestamp = request.form.get('timestamp')
+    timestamp = get_current_timestamp() # request.form.get('timestamp')
     # --- Parse these with type safety ---
     optimize = request.form.get("optimize", "True")
     optimize = optimize if isinstance(optimize, bool) else (optimize.lower() == "true")
@@ -264,22 +276,22 @@ def upload():
     date_str = timestamp.split('T')[0]
     logging.info("Saving raw data under DATA/RAW_DATA")
     def replace_nested_lists_with_json(obj):
-            if isinstance(obj, list):
-                new_list = []
-                for item in obj:
-                    if isinstance(item, list):
-                        # If the item is a list, replace with its JSON string
-                        new_list.append(json.dumps(item))
-                    elif isinstance(item, dict):
-                        new_list.append(replace_nested_lists_with_json(item))
-                    else:
-                        new_list.append(item)
-                return new_list
-            elif isinstance(obj, dict):
-                # For each dict value, check for lists, dicts, or other types
-                return {k: replace_nested_lists_with_json(v) for k, v in obj.items()}
-            else:
-                return obj
+        if isinstance(obj, (list, tuple)):
+            new_list = []
+            for item in obj:
+                if isinstance(item, (list, tuple)):
+                    # If the item is a list, replace with its JSON string
+                    new_list.append(json.dumps(item))
+                elif isinstance(item, dict):
+                    new_list.append(replace_nested_lists_with_json(item))
+                else:
+                    new_list.append(item)
+            return new_list
+        elif isinstance(obj, dict):
+            # For each dict value, check for lists, dicts, or other types
+            return {k: replace_nested_lists_with_json(v) for k, v in obj.items()}
+        else:
+            return obj
     sanitized_payload = replace_nested_lists_with_json(sanitized_document_dict)
     try:
         save_raw_data(date_str, session_id, sanitized_payload, timestamp) # Use sanitized_payload
@@ -290,7 +302,8 @@ def upload():
             "details": str(e),
             "summary": str(type(e)),
             "original_keys": list(sanitized_payload.keys()),
-            "needed_values": grouped
+            "needed_values": grouped,
+            # "failed_payload_json": json.dumps(sanitized_payload)
         }, timestamp)
     logging.info("Saving receipt data under DATA/RECEIPTS")
     save_receipt_data(date_str, session_id, grouped, timestamp)
@@ -405,7 +418,7 @@ def get_data():
 #     api_key = os.getenv('GEMINI_API_KEY')
 #     if api_key:
 #         try:
-#             import google.generativeai as genai
+#             import google.generativeai as genai # pip install google-generativeai
 #             genai.configure(api_key=api_key)
 #             model = genai.GenerativeModel('gemini-pro')
 #             resp = model.generate_content(message)

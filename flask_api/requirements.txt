@@ -8,5 +8,5 @@ flask
 Pillow
 pandas
 numpy
-google-generativeai
+# google-generativeai
 flask-cors
