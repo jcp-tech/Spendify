@@ -317,6 +317,7 @@ async def on_message(message):
 
 if __name__ == '__main__':
     if not DISCORD_TOKEN:
+        bot.run(os.getenv('DISCORD_TOKEN'))
         print("Error: DISCORD_TOKEN environment variable is not set.")
     else:
         bot.run(DISCORD_TOKEN)

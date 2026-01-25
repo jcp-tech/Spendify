@@ -1,5 +1,5 @@
 {
-    "version": "0.2.0",
+    "version": "0.2.0", // NOTE THIS FILE ISNT WORKING TO BE FIXED.
     "configurations": [
         {
             "name": "Application Debugger: ADK",
@@ -11,10 +11,11 @@
             ],
             "cwd": "${workspaceFolder}/adk_pipeline",
             "console": "integratedTerminal",
-            "python": "${workspaceFolder}/venv-windows/Scripts/python.exe", // Windows
             // "python": "${workspaceFolder}/venv-linux/bin/python", // Linux
-            "env": {
-            }
+            "python": "${workspaceFolder}/venv-windows/Scripts/python.exe", // Windows
+            // "env": {
+            // },
+            "envFile": "${workspaceFolder}/adk_pipeline/.env"
         },
         {
             "name": "Python Debugger: Bot",
@@ -22,12 +23,13 @@
             "request": "launch",
             "program": "${workspaceFolder}/discord_bot/bot.py",
             "console": "integratedTerminal",
-            "python": "${workspaceFolder}/venv-windows/Scripts/python.exe", // Windows
             // "python": "${workspaceFolder}/venv-linux/bin/python", // Linux
-            "env": {
-                // Add any environment variables needed for the Bot here
-                // e.g., "DISCORD_TOKEN": "your_token_here"
-            }
+            "python": "${workspaceFolder}/venv-windows/Scripts/python.exe", // Windows
+            // "env": {
+            //     // Add any environment variables needed for the Bot here
+            //     // e.g., "DISCORD_TOKEN": "your_token_here"
+            // },
+            "envFile": "${workspaceFolder}/discord_bot/.env"
         },
         {
             "name": "Python Debugger: Flask UI & API",
@@ -35,12 +37,13 @@
             "request": "launch",
             "program": "${workspaceFolder}/flask_api/main_api.py",
             "console": "integratedTerminal",
-            "python": "${workspaceFolder}/venv-windows/Scripts/python.exe", // Windows
             // "python": "${workspaceFolder}/venv-linux/bin/python", // Linux
-            "env": {
-                // Add any environment variables needed for the API here
-                // e.g., "API_PORT": "8000"
-            }
+            "python": "${workspaceFolder}/venv-windows/Scripts/python.exe", // Windows
+            // "env": {
+            //     // Add any environment variables needed for the API here
+            //     // e.g., "API_PORT": "8000"
+            // },
+            "envFile": "${workspaceFolder}/flask_api/.env"
         }
     ],
     "compounds": [
