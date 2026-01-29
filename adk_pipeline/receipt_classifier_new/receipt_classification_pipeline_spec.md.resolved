@@ -1,0 +1,548 @@
+# Receipt Classification Pipeline - Complete Specification
+
+> **Purpose**: This document provides a complete specification for recreating the Receipt Classification Pipeline in any AI agent framework (e.g., LangChain, AutoGen, CrewAI, Semantic Kernel, etc.)
+
+![Pipeline Diagram](uploaded_media_1769687586563.png)
+
+---
+
+## 🎯 Pipeline Overview
+
+This is a **multi-agent AI pipeline** that processes raw receipt OCR data and:
+1. **Classifies** line items into spending categories
+2. **Groups** items by category with calculated totals
+3. **Validates** that computed totals match the receipt total
+4. **Iteratively refines** if validation fails (up to 10 attempts)
+5. **Persists** the final result to cloud storage (Firebase)
+
+---
+
+## 📊 Input/Output Specification
+
+### Input Data Format
+```json
+{
+    "line_items": [
+        "1 g1 Imp White 7.75",
+        "1 Blue Moon Tap 6.00",
+        "Mozzarella&Tomato 9.95",
+        "Pork Quesadilla 9.95",
+        "1 Fren Onion Soup 5.95",
+        "1 Pork Chop 21.95",
+        "1 Hanger Sizzle 24.95",
+        "1 Printer 200.00"
+    ],
+    "receipt_total_value": {
+        "total_amount": "294.18",
+        "net_amount": "286.50",
+        "total_tax_amount": "7.68"
+    },
+    "grouped": {
+        "net_amount": ["286.50"],
+        "total_amount": ["294.18"],
+        "total_tax_amount": ["7.68"],
+        "currency": ["$"],
+        "purchase_time": ["08:22PM"],
+        "receipt_date": ["09/24/2016"],
+        "supplier_name": ["Nancy"],
+        "supplier_phone": ["718.343-4616"],
+        "supplier_address": ["255-41 Jericho Turnpike\nFloral Park, NY 11001"],
+        "line_item": ["1 g1 Imp White 7.75", "..."],
+        "supplier_city": [""]
+    }
+}
+```
+
+### Final Output Format
+```json
+{
+    "categories": [
+        {
+            "category": "Fast Food",
+            "items": ["g1 Imp White", "Blue Moon Tap", "Mozzarella&Tomato", "Pork Quesadilla", "Fren Onion Soup", "Pork Chop", "Hanger Sizzle"],
+            "total_price": "86.50"
+        },
+        {
+            "category": "Electronics",
+            "items": ["Printer"],
+            "total_price": "200.00"
+        }
+    ]
+}
+```
+
+---
+
+## 🏗️ Architecture: Agent Hierarchy
+
+```
+ReceiptClassificationPipeline (Sequential Agent)
+├── 1. InitialClassifier (LLM Agent)
+├── 2. grouping_classification (LLM Agent)
+├── 3. RefineClassificationLoop (Loop Agent, max 10 iterations)
+│   ├── validate_classification (LLM Agent)
+│   │   ├── [Tool] calculate_final_total
+│   │   └── [Tool] exit_function
+│   └── refine_classifier (LLM Agent)
+└── 4. response_agent (LLM Agent)
+    └── [Tool] save_to_firebase
+```
+
+---
+
+## 📋 Detailed Agent Specifications
+
+### Agent 1: `InitialClassifier` (LLM Agent)
+
+**Purpose**: Transform raw receipt line items into structured, classified objects.
+
+**Input Schema**:
+```python
+class ReceiptTotalValue:
+    total_amount: str       # Total amount on receipt
+    net_amount: str         # Net amount before tax
+    total_tax_amount: str   # Tax amount
+
+class ReceiptClassificationInput:
+    line_items: List[str]                    # Raw line items from OCR
+    receipt_total_value: ReceiptTotalValue   # Totals from receipt
+    grouped: Dict[str, Any]                  # Raw OCR metadata
+```
+
+**Output Schema**:
+```python
+class ReceiptClassificationBreakdown:
+    item: str       # Item name only (no quantity/price)
+    quantity: str   # Extracted quantity (default "1")
+    price: str      # Extracted price
+    category: str   # Assigned category
+
+class ReceiptClassificationOutput:
+    classified: List[ReceiptClassificationBreakdown]
+    total_values_dict: ReceiptTotalValue
+```
+
+**System Prompt**:
+```
+You are a Receipt Classifier.
+You are a receipt classification agent.
+
+Task:
+Given a list of receipt line items (each with quantity, item name, and price at the end), assign each item to ONE of these categories ONLY:
+["Groceries", "Fast Food", "Electronics", "Apparel", "Personal Care", "Others"]
+
+Rules:
+- Use only the item name and context to decide the best category.
+- If an item doesn't clearly fit a category, assign it to "Others".
+- Do not group, sum, or explain—just classify.
+- If a line_item doesn't have a quantity default it to "1"
+- Identify all the line_items which doesn't have a price and see what is the pending cost (from subtracting the totals) then split the pending cost equally among the items without price
+- NOTE: That when returning "items" do not include the quantity and price, just the item name (VERY IMPORTANT)
+
+Output:
+Return a valid JSON array (no extra text). Each element should have:
+"item": The item string without quantity and price.
+"quantity": The quantity from the item string.
+"price": The price from the item string.
+"category": The assigned category.
+```
+
+**Output Key**: `stage_init_classification`
+
+---
+
+### Agent 2: `grouping_classification` (LLM Agent)
+
+**Purpose**: Group classified items by category and compute category totals.
+
+**Input**: Uses output from `InitialClassifier` via key `{stage_init_classification}`
+
+**Output Schema**:
+```python
+class ReceiptGroupingBreakdown:
+    category: str           # Category name
+    items: List[str]        # List of item names
+    total_price: str        # Sum of prices for this category
+
+class ReceiptGroupingOutput:
+    grouped: List[ReceiptGroupingBreakdown]
+```
+
+**System Prompt**:
+```
+Task:
+You are given a Classification JSON with receipt items you need to group by category
+
+Output:
+Return a valid JSON array (no extra text). Each element should have:
+"category": The category of the items
+"items": A list of item names in that category
+"total_price": The total price of all items in that category
+
+Example Output:
+[
+    {"category": "Groceries", "items": ["Apple", "Bread"], "total_price": "3.55"},
+    {"category": "Fast Food", "items": ["Fren Onion Soup"], "total_price": "5.95"}
+]
+
+The Input Data is in {stage_init_classification}
+```
+
+**Output Key**: `grouped_classification`
+
+---
+
+### Agent 3: `RefineClassificationLoop` (Loop Agent)
+
+**Purpose**: Iteratively validate and refine the classification until totals match.
+
+**Configuration**:
+- **Max Iterations**: 10
+- **Exit Condition**: When `validate_classification` sets `escalate = True`
+
+**Sub-Agents**:
+
+#### Sub-Agent 3.1: `validate_classification` (LLM Agent)
+
+**Purpose**: Verify that grouped classification totals match the receipt total.
+
+**Tools Available**:
+
+##### Tool 1: [calculate_final_total](file:///c:/Users/JonathanChackoPattas/Desktop/Spendify/adk_pipeline/receipt_classifier/subagents/classification_reviewer/tools.py#5-50)
+```python
+def calculate_final_total(
+    data: List[Dict[str, Any]],  # List of category objects
+    tool_context: ToolContext
+) -> Dict[str, Any]:
+    """
+    Calculates the sum of all total_price values from grouped categories.
+    
+    Args:
+        data: List of dicts with "category", "items", "total_price"
+        
+    Returns:
+        {
+            "result": "success" | "error",
+            "final_total": float,       # Only if success
+            "message": str
+        }
+    """
+    final_total = 0.0
+    for category_data in data:
+        try:
+            final_total += float(category_data["total_price"])
+        except (ValueError, KeyError) as e:
+            return {"result": "error", "message": f"Error processing: {e}"}
+    
+    return {
+        "result": "success",
+        "final_total": final_total,
+        "message": f"Successfully calculated final total: {final_total}"
+    }
+```
+
+##### Tool 2: [exit_function](file:///c:/Users/JonathanChackoPattas/Desktop/Spendify/adk_pipeline/receipt_classifier/subagents/classification_reviewer/tools.py#52-110)
+```python
+def exit_function(
+    final_total: float,
+    data: Dict[str, Any],
+    tool_context: ToolContext
+) -> Dict[str, Any]:
+    """
+    Compares computed total with receipt totals and exits loop if matching.
+    
+    Comparison Logic:
+    - Compares against total_amount AND net_amount
+    - Tolerance: ±0.01 for floating-point precision
+    
+    If Match:
+        - Sets tool_context.actions.escalate = True (exits loop)
+        - Returns {"status": 1, "details": "...valid..."}
+    
+    If No Match:
+        - Returns {"status": 0, "details": "...mismatch details..."}
+    """
+```
+
+**System Prompt**:
+```
+You are a Receipt Classification Validation Agent.
+
+Your task is to verify that the GROUPED receipt breakdown's total matches the original receipt total_amount or net_amount.
+
+VALIDATION PROCESS:
+1. Use the `calculate_final_total` tool on the grouped_classification data.
+2. If it returns 'error': Output JSON with {"status": 0, "details": "error message"}
+3. If it returns 'success': Call `exit_function` with:
+   - The computed final_total
+   - The original classification data
+4. The `exit_function` will compare against total_amount and net_amount and set escalation state.
+5. Output ONLY the result from the last tool executed.
+
+INPUT DATA FIELDS:
+- `grouped_classification`: The grouped receipt breakdown
+- `stage_init_classifier`: Initial classification with reference totals
+```
+
+**Output Key**: `validation_result`
+
+---
+
+#### Sub-Agent 3.2: `refine_classifier` (LLM Agent)
+
+**Purpose**: Fix the grouped classification when validation fails.
+
+**System Prompt**:
+```
+You are a Receipt Classification Refiner Agent.
+
+CONTEXT:
+You receive as input:
+- "stage_init_classification": The initial classification with classified items and receipt_total_value
+- "grouped": The current grouped breakdown
+- "validation_result": Result from validation (status: 1=pass, 0=fail)
+
+TASK:
+1. If "validation_result" status is 1:
+   - Classification is valid. DO NOT CHANGE ANYTHING.
+   - Output the "grouped" list exactly as received.
+
+2. If "validation_result" status is 0:
+   - Read "validation_result.details" for hints about mismatches
+   - Examine "classified" and "grouped" data
+   - Adjust the "grouped" breakdown to fix only what is necessary
+   - Ensure sum of all "total_price" values matches "receipt_total_value.total_amount"
+   - Move items if in wrong category
+   - Correct prices based on data in "classified"
+   - Do NOT invent, hallucinate, or add extra items or prices
+
+OUTPUT:
+Return ONLY the corrected grouped JSON array:
+[
+    {"category": "Groceries", "items": ["Apple", "Bread"], "total_price": "3.55"},
+    {"category": "Fast Food", "items": ["Fren Onion Soup"], "total_price": "5.95"}
+]
+
+Do NOT output explanations, comments, or anything except the grouped JSON array.
+```
+
+**Output Key**: `grouped` (overwrites for next loop iteration)
+
+---
+
+### Agent 4: `response_agent` (LLM Agent)
+
+**Purpose**: Generate final summary and persist to Firebase.
+
+**Tool Available**:
+
+##### Tool: [save_to_firebase](file:///c:/Users/JonathanChackoPattas/Desktop/Spendify/adk_pipeline/receipt_classifier/subagents/classification_response/tools.py#19-43)
+```python
+class Category:
+    category: str
+    items: List[str]
+    total_price: str
+
+class FinalOutputSchema:
+    categories: List[Category]
+
+def save_to_firebase(
+    data: FinalOutputSchema,
+    tool_context: ToolContext
+) -> Dict[str, Any]:
+    """
+    Saves the final classification to Firebase Firestore.
+    
+    Storage Path:
+        DATA -> SUMMARISED_DATA -> {date_str} -> {session_id}
+    
+    Stored Payload:
+        {
+            "categories": [...],
+            "timestamp": datetime,
+            "final_total": computed_sum
+        }
+    
+    Returns:
+        {"result": "success", "message": "...", "data": json_string}
+    """
+```
+
+**System Prompt**:
+```
+You are a Receipt Classification Finalizer Agent.
+
+Given the validated receipt classification breakdown, perform the following steps:
+1. Generate a summary JSON as described below.
+2. Call the `save_to_firebase` tool, passing the summary from `grouped_classification`.
+3. Output ONLY the result from the `save_to_firebase` tool.
+
+Summary JSON Fields:
+- summary: A concise description of the classification result.
+- categories: The list of categories and their items (from grouped_classification).
+- final_total: The computed final total.
+- status: 1 if totals matched, 0 if not.
+- timestamp: Use the provided timestamp if available.
+- notes: Any warnings or info.
+
+Take the Data from the 'grouped_classification' key in the input JSON.
+{grouped_classification}
+```
+
+**Output Key**: `firebase_save_result`
+
+---
+
+## 🔄 Data Flow Between Agents
+
+```mermaid
+graph TD
+    A[Raw Receipt Input] --> B[InitialClassifier]
+    B -->|stage_init_classification| C[grouping_classification]
+    C -->|grouped_classification| D[RefineClassificationLoop]
+    
+    subgraph RefineClassificationLoop
+        E[validate_classification] -->|validation_result| F[refine_classifier]
+        F -->|grouped| E
+    end
+    
+    D -->|grouped_classification| G[response_agent]
+    G --> H[Firebase Storage]
+```
+
+### State Keys Used:
+| Key | Producer | Consumer(s) |
+|-----|----------|-------------|
+| `stage_init_classification` | InitialClassifier | grouping_classification, validate_classification, refine_classifier |
+| `grouped_classification` | grouping_classification | response_agent |
+| `validation_result` | validate_classification | refine_classifier |
+| `grouped` | refine_classifier | validate_classification (next iteration) |
+| `firebase_save_result` | response_agent | (Final output) |
+
+---
+
+## 🛠️ Key Implementation Patterns
+
+### 1. Sequential Agent Pattern
+The root agent is a **Sequential Agent** that executes sub-agents in order:
+```python
+root_agent = SequentialAgent(
+    name="ReceiptClassificationPipeline",
+    sub_agents=[
+        initial_classifier,       # Step 1
+        grouping_classification,  # Step 2
+        refinement_loop,          # Step 3
+        response_agent,           # Step 4
+    ]
+)
+```
+
+### 2. Loop Agent Pattern with Exit Condition
+The `RefineClassificationLoop` is a **Loop Agent** that:
+- Runs up to 10 iterations
+- Exits early when `tool_context.actions.escalate = True` is set
+
+```python
+refinement_loop = LoopAgent(
+    name="RefineClassificationLoop",
+    max_iterations=10,
+    sub_agents=[
+        validate_classification,
+        refine_classifier,
+    ]
+)
+```
+
+### 3. Tool-Based Loop Exit
+The exit condition is controlled by a **tool** (not the LLM directly):
+```python
+def exit_function(..., tool_context):
+    if totals_match:
+        tool_context.actions.escalate = True  # This breaks the loop
+        return {"status": 1, "details": "Valid!"}
+```
+
+### 4. Output Keys for State Passing
+Each agent specifies an `output_key` that stores its result in shared state:
+```python
+initial_classifier = LlmAgent(
+    ...,
+    output_key="stage_init_classification"  # Other agents read this key
+)
+```
+
+---
+
+## 📦 Categories for Classification
+
+The pipeline uses these fixed categories:
+```
+["Groceries", "Fast Food", "Electronics", "Apparel", "Personal Care", "Others"]
+```
+
+**Category Assignment Rules**:
+- Use item name and context to determine category
+- If unclear, assign to "Others"
+- Never create new categories
+
+---
+
+## ⚠️ Important Behaviors
+
+1. **No Hallucination**: The refiner can only move items or adjust prices based on original data—never invent new items.
+
+2. **Quantity Defaulting**: If a line item has no quantity, default to "1".
+
+3. **Price Distribution**: If items have no price, calculate the missing amount from totals and distribute equally.
+
+4. **Floating-Point Tolerance**: Validation uses ±0.01 tolerance for price matching.
+
+5. **Dual Total Comparison**: Validation checks against BOTH `total_amount` AND `net_amount`.
+
+---
+
+## 🔧 Environment Configuration
+
+```env
+GOOGLE_GENAI_MODEL=gemini-2.0-flash
+FIREBASE_CREDENTIALS=firebase_credentials.json
+```
+
+---
+
+## 📁 File Structure (For Reference)
+
+```
+receipt_classifier/
+├── agent.py                          # Root Sequential Agent
+├── subagents/
+│   ├── classifier_init/
+│   │   └── agent.py                  # InitialClassifier
+│   ├── classification_grouper/
+│   │   ├── agent.py                  # grouping_classification
+│   │   └── tools.py                  # (unused placeholder)
+│   ├── classification_reviewer/
+│   │   ├── agent.py                  # validate_classification
+│   │   └── tools.py                  # calculate_final_total, exit_function
+│   ├── classification_refiner/
+│   │   └── agent.py                  # refine_classifier
+│   └── classification_response/
+│       ├── agent.py                  # response_agent
+│       ├── tools.py                  # save_to_firebase
+│       └── firebase_store.py         # Firebase Firestore logic
+```
+
+---
+
+## 🎯 Summary
+
+To recreate this pipeline in another framework, you need:
+
+1. **4 LLM Agents** with specific system prompts (provided above)
+2. **4 Tools** that handle computation and storage:
+   - [calculate_final_total](file:///c:/Users/JonathanChackoPattas/Desktop/Spendify/adk_pipeline/receipt_classifier/subagents/classification_reviewer/tools.py#5-50) - Sums category totals
+   - [exit_function](file:///c:/Users/JonathanChackoPattas/Desktop/Spendify/adk_pipeline/receipt_classifier/subagents/classification_reviewer/tools.py#52-110) - Compares totals and triggers loop exit
+   - [save_to_firebase](file:///c:/Users/JonathanChackoPattas/Desktop/Spendify/adk_pipeline/receipt_classifier/subagents/classification_response/tools.py#19-43) - Persists to cloud storage
+3. **A Sequential Agent** to orchestrate the pipeline
+4. **A Loop Agent** with exit condition support for iterative refinement
+5. **Shared State Management** for passing data between agents via output keys
