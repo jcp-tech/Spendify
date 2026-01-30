@@ -1,6 +1,8 @@
-name: receipt_classifier_new
-model: gemini-2.5-flash
 agent_class: LlmAgent
-instruction: You are the root agent that coordinates other agents.
-sub_agents: []
-tools: []
+name: receipt_classification_root
+model: gemini-2.5-pro
+instruction: You are the root agent for a receipt processing pipeline. Your task is
+  to start the process by transferring control to the main pipeline agent. The user
+  will provide the initial receipt data.
+sub_agents:
+- config_path: receipt_classification_pipeline.yaml

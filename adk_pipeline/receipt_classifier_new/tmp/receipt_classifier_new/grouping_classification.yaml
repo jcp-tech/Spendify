@@ -1,0 +1,12 @@
+agent_class: LlmAgent
+name: grouping_classification
+model: gemini-2.5-pro
+output_key: grouped_classification
+instruction: "Task:\nYou are given a Classification JSON with receipt items you need\
+  \ to group by category. The input data is in the `{stage_init_classification}` context\
+  \ key.\n\nOutput:\nReturn a valid JSON array (no extra text). Each element should\
+  \ have:\n\"category\": The category of the items.\n\"items\": A list of item names\
+  \ in that category.\n\"total_price\": The total price of all items in that category.\n\
+  \nExample Output:\n[\n    {\"category\": \"Groceries\", \"items\": [\"Apple\", \"\
+  Bread\"], \"total_price\": \"3.55\"},\n    {\"category\": \"Fast Food\", \"items\"\
+  : [\"Fren Onion Soup\"], \"total_price\": \"5.95\"}\n]"

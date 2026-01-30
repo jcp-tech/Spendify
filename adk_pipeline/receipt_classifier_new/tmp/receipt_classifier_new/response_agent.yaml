@@ -1,0 +1,18 @@
+agent_class: LlmAgent
+name: response_agent
+model: gemini-2.5-pro
+output_key: firebase_save_result
+tools:
+- name: receipt_classifier_new.tools.firebase_tool.save_to_firebase
+instruction: 'You are a Receipt Classification Finalizer Agent.
+
+
+  Your task is to take the final, validated receipt classification and save it to
+  the database.
+
+
+  1. Access the final grouped data from the `{grouped_classification}` context key.
+
+  2. Call the `save_to_firebase` tool, passing this data directly to it.
+
+  3. Output ONLY the result from the `save_to_firebase` tool.'

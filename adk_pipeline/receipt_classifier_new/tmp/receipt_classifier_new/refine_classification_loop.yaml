@@ -1,0 +1,6 @@
+agent_class: LoopAgent
+name: refine_classification_loop
+max_iterations: 10
+sub_agents:
+- config_path: validate_classification.yaml
+- config_path: refine_classifier.yaml

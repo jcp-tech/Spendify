@@ -1,0 +1,9 @@
+agent_class: SequentialAgent
+name: receipt_classification_pipeline
+description: A sequential agent that classifies, groups, validates, and saves receipt
+  data.
+sub_agents:
+- config_path: initial_classifier.yaml
+- config_path: grouping_classification.yaml
+- config_path: refine_classification_loop.yaml
+- config_path: response_agent.yaml
